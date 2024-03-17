@@ -403,7 +403,7 @@ class TextToSpeechService(AIModelService):
             weights=uint_weights,
             wait_for_finalization=False,
             wait_for_inclusion=False,
-            version_key=self.spec_version,
+            version_key=self.version,
         )
         if result is True:
             bt.logging.info("set_weights on chain successfully!")
