@@ -189,9 +189,7 @@ class VoiceCloningService(AIModelService):
                     bt.logging.success(f"Voice Clone Audio file uploaded to wandb successfully for Hotkey {axon.hotkey} and uid {uid_in_metagraph}")
                 except Exception as e:
                     bt.logging.error(f"Error uploading Voice Clone Audio file to wandb: {e}")                               
-                # Score the output and update the weights
-                score = self.score_output(self.audio_file_path, cloned_file_path, self.text_input)
-                self.update_score(axon, score, service="Voice Cloning", ax=self.filtered_axon)
+                self.update_score(axon, score, service="Voice Cloning") #, ax=self.filtered_axon
                 existing_wav_files = [f for f in os.listdir('/tmp') if f.endswith('.wav')]
                 for existing_file in existing_wav_files:
                     try:
