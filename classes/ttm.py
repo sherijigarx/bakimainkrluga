@@ -43,7 +43,6 @@ class MusicGenerationService(AIModelService):
         self.filtered_axon = []
         self.combinations = []
         self.duration = 755  #755 tokens = 15 seconds music
-        self.response = None
         self.lock = asyncio.Lock()
         self.best_uid = self.priority_uids(self.metagraph)
         
@@ -116,7 +115,6 @@ class MusicGenerationService(AIModelService):
     def process_responses(self,filtered_axons, responses, prompt):
         for axon, response in zip(filtered_axons, responses):
             if response is not None and isinstance(response, lib.protocol.MusicGeneration):
-                self.response = response
                 self.process_response(axon, response, prompt)
         
         bt.logging.info(f"Scores after update in TTM: {self.scores}")
@@ -182,7 +180,7 @@ class MusicGenerationService(AIModelService):
 
             try:
                 uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
-                wandb.log({f"TTM prompt: {self.response.text_input}": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
+                wandb.log({f"TTM prompt: {prompt}": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
                 bt.logging.success(f"TTM Audio file uploaded to wandb successfully for Hotkey {axon.hotkey} and UID {uid_in_metagraph}")
             except Exception as e:
                 bt.logging.error(f"Error uploading TTM audio file to wandb: {e}")

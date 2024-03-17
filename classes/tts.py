@@ -41,7 +41,6 @@ class TextToSpeechService(AIModelService):
         self.tao = self.metagraph.neurons[self.uid].stake.tao
         self.combinations = []
         self.lock = asyncio.Lock()
-        self.response = None
         self.best_uid = self.priority_uids(self.metagraph)
         
     def load_prompts(self):
@@ -162,7 +161,6 @@ class TextToSpeechService(AIModelService):
     def process_responses(self,filtered_axons, responses, prompt):
         for axon, response in zip(filtered_axons, responses):
             if response is not None and isinstance(response, lib.protocol.TextToSpeech):
-                self.response = response
                 self.process_response(axon, response, prompt)
         
         bt.logging.info(f"Scores after update in TTS: {self.scores}")
@@ -218,7 +216,7 @@ class TextToSpeechService(AIModelService):
             print(f"Saved audio file to {output_path}")
             try:
                 uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
-                wandb.log({f"Text to Speech prompt:{self.response.text_input} ": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
+                wandb.log({f"Text to Speech prompt:{prompt} ": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
                 bt.logging.success(f"TTS Audio file uploaded to wandb successfully for Hotkey {axon.hotkey}")
             except Exception as e:
                 bt.logging.error(f"Error uploading TTS audio to wandb for Hotkey {axon.hotkey}: {e}")
