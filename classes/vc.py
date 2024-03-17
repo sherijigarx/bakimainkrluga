@@ -190,12 +190,6 @@ class VoiceCloningService(AIModelService):
                 except Exception as e:
                     bt.logging.error(f"Error uploading Voice Clone Audio file to wandb: {e}")                               
                 self.update_score(axon, score, service="Voice Cloning") #, ax=self.filtered_axon
-                existing_wav_files = [f for f in os.listdir('/tmp') if f.endswith('.wav')]
-                for existing_file in existing_wav_files:
-                    try:
-                        os.remove(os.path.join('/tmp', existing_file))
-                    except Exception as e:
-                        bt.logging.error(f"Error deleting existing WAV file: {e}")
                 return cloned_file_path
 
         except Exception as e:
