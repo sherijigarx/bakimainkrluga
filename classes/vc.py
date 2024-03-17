@@ -17,6 +17,7 @@ import lib.protocol
 from lib.protocol import VoiceClone
 from lib.clone_score import CloneScore
 from classes.aimodel import AIModelService
+import wandb
 
 # Set the project root path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -38,7 +39,6 @@ class VoiceCloningService(AIModelService):
         self.combinations = []
         self.lock = asyncio.Lock()
         self.best_uid = self.priority_uids(self.metagraph)
-
         self.filtered_axon = []
         self.filtered_axons = []
         self.responses = None
@@ -162,9 +162,9 @@ class VoiceCloningService(AIModelService):
                 # Normalize the speech data
                 audio_data = clone_tensor / torch.max(torch.abs(clone_tensor))
                 # Convert to 32-bit PCM
-                audio_data_int = (audio_data * 2147483647).type(torch.IntTensor)
+                audio_data_int_ = (audio_data * 2147483647).type(torch.IntTensor)
                 # Add an extra dimension to make it a 2D tensor
-                audio_data_int = audio_data_int.unsqueeze(0)
+                audio_data_int = audio_data_int_.unsqueeze(0)
                 if response.model_name == "elevenlabs/eleven":
                     sampling_rate = 44000
                 else:
@@ -180,16 +180,25 @@ class VoiceCloningService(AIModelService):
                     score = self.score_output(self.audio_file_path, cloned_file_path, prompt)
                     bt.logging.info(f"The cloned file have been saved successfully: {cloned_file_path}")
                 bt.logging.info(f"The score of the cloned file : {score}")
+                torchaudio.save(cloned_file_path, src=audio_data_int, sample_rate=sampling_rate)
                 try:
-                    self.update_score(axon, score, service="Voice Cloning", ax=axon)
+                    uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
+                    wandb.log({f"Voice Clone Prompt: {response.text_input}": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
+                    bt.logging.success(f"Voice Clone Audio file uploaded to wandb successfully for Hotkey {axon.hotkey} and uid {uid_in_metagraph}")
                 except Exception as e:
-                    bt.logging.error(f"Error updating the score in vc.py: {e}")
-            bt.logging.info(f"The cloned file have been saved successfully: {cloned_file_path}")
-            return cloned_file_path
-            
+                    bt.logging.error(f"Error uploading Voice Clone Audio file to wandb: {e}")                               
+                # Score the output and update the weights
+                score = self.score_output(self.audio_file_path, cloned_file_path, self.text_input)
+                self.update_score(axon, score, service="Voice Cloning", ax=self.filtered_axon)
+                existing_wav_files = [f for f in os.listdir('/tmp') if f.endswith('.wav')]
+                for existing_file in existing_wav_files:
+                    try:
+                        os.remove(os.path.join('/tmp', existing_file))
+                    except Exception as e:
+                        bt.logging.error(f"Error deleting existing WAV file: {e}")
+
         except Exception as e:
             pass
-            bt.logging.info(f"Error processing speech output : {e}")
 
 
     def score_output(self, input_path, output_path, text_input):
