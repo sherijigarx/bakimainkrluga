@@ -154,7 +154,6 @@ class VoiceCloningService(AIModelService):
             print(f"An error occurred while processing voice clone responses: {e}")
 
     def handle_clone_output(self, response, axon, prompt=None, input_file=None):
-        txt_input = prompt if prompt else response.text_input
         try:
             if response is not None and response.clone_output is not None:
                 output = response.clone_output
@@ -176,21 +175,26 @@ class VoiceCloningService(AIModelService):
                     torchaudio.save(cloned_file_path, src=audio_data_int, sample_rate=sampling_rate)
                     score = self.score_output(input_file, cloned_file_path, prompt) # self.audio_file_path
                     bt.logging.info(f"The cloned file for API have been saved successfully: {cloned_file_path}")
+                    try:
+                        uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
+                        wandb.log({f"Voice Clone Prompt: {prompt}": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
+                        bt.logging.success(f"Voice Clone Audio file uploaded to wandb successfully for Hotkey {axon.hotkey} and uid {uid_in_metagraph}")
+                    except Exception as e:
+                        bt.logging.error(f"Error uploading Voice Clone Audio file to wandb: {e}")                               
                     return cloned_file_path
                 else:
                     cloned_file_path = os.path.join('/tmp', '_cloned_'+ axon.hotkey[:] +'.wav' )
                     torchaudio.save(cloned_file_path, src=audio_data_int, sample_rate=sampling_rate)
                     score = self.score_output(self.audio_file_path, cloned_file_path, prompt)
                     bt.logging.info(f"The cloned file have been saved successfully: {cloned_file_path}")
+                    try:
+                        uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
+                        wandb.log({f"Voice Clone Prompt: {response.text_input}": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
+                        bt.logging.success(f"Voice Clone Audio file uploaded to wandb successfully for Hotkey {axon.hotkey} and uid {uid_in_metagraph}")
+                    except Exception as e:
+                        bt.logging.error(f"Error uploading Voice Clone Audio file to wandb: {e}")
                 bt.logging.info(f"The score of the cloned file : {score}")
-                try:
-                    uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
-                    wandb.log({f"Voice Clone Prompt: {txt_input}": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
-                    bt.logging.success(f"Voice Clone Audio file uploaded to wandb successfully for Hotkey {axon.hotkey} and uid {uid_in_metagraph}")
-                except Exception as e:
-                    bt.logging.error(f"Error uploading Voice Clone Audio file to wandb: {e}")                               
                 self.update_score(axon, score, service="Voice Cloning") #, ax=self.filtered_axon
-
         except Exception as e:
             pass
 
