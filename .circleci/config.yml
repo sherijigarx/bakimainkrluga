@@ -11,6 +11,7 @@ jobs:
     parameters:
       python-version:
         type: string
+    docker:
       - image: cimg/python:<< parameters.python-version >>
 
     steps:
