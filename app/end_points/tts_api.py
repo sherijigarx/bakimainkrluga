@@ -17,8 +17,6 @@ class TTS_API(TextToSpeechService):
         try:
             # Convert the metagraph's UIDs to a list
             uids = self.metagraph.uids.tolist()
-            emissions = self.metagraph.E
-            bt.logging.debug(f"all the uids and emissions are in this list: {emissions}")
 
             # Ensure both operands are PyTorch tensors before multiplication
             queryable_axons_mask = torch.tensor(self.metagraph.total_stake >= 0, dtype=torch.float32).clone().detach() * torch.tensor([
