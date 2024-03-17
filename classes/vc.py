@@ -39,6 +39,7 @@ class VoiceCloningService(AIModelService):
         self.minimum_dendrites_per_query = 5  # Example value, adjust as needed
         self.combinations = []
         self.lock = asyncio.Lock()
+        self.best_uid = self.priority_uids(self.metagraph)
 
         ###################################### DIRECTORY STRUCTURE ###########################################
         self.source_path = os.path.join(audio_subnet_path, "vc_source")
@@ -155,6 +156,11 @@ class VoiceCloningService(AIModelService):
 
 
     async def main_loop_logic(self, step):
+        # Sync and update weights logic
+        if step % 10 == 0:
+            self.metagraph.sync(subtensor=self.subtensor)
+            self.best_uid = self.priority_uids(self.metagraph)
+
         tasks = []
         try:
             files = os.listdir(self.source_path)

@@ -33,6 +33,7 @@ class AIModelService:
         self.setup_subtensor()
         self.setup_dendrite()
         self.setup_metagraph()
+        self.priority_uids(self.metagraph)
         self.vcdnp = self.config.vcdnp
         self.max_mse = self.config.max_mse
         self.pt_file = hf_hub_download(repo_id="lukewys/laion_clap", filename="630k-best.pt")
@@ -61,7 +62,35 @@ class AIModelService:
         # Parse and return the config
         config = bt.config(parser)
         return config
+    
+    def priority_uids(self, metagraph):
+        bt.logging.info(f"Just checking if the program entered the priority_uids function.")
+        hotkeys = metagraph.hotkeys  # List of hotkeys
+        coldkeys = metagraph.coldkeys  # List of coldkeys
+        UIDs = range(len(hotkeys))  # Assuming UID is the index of neurons
+        stakes = metagraph.S.numpy()  # Total stake
+        emissions = metagraph.E.numpy()  # Emission
+        axon = metagraph.axons
+        bt.logging.info(f"UIDssssssssssssssssssssssssssssssssssssssssssssssssssssss: {UIDs}")
+        # Create a DataFrame from the metagraph data
+        df = pd.DataFrame({
+            "UID": UIDs,
+            "HOTKEY": hotkeys,
+            "COLDKEY": coldkeys,
+            "STAKE": stakes,
+            "EMISSION": emissions,
+            "AXON": axon,
+        })
 
+        df = df[df['STAKE'] < 20000]
+        df = df.sort_values(by=["EMISSION"], ascending=False)
+        uid = df.iloc[0]['UID']
+        axon_info = df.iloc[0]['AXON']
+
+        result = [(uid, axon_info)]
+        bt.logging.info(f"Priorityyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy UIDs: {result}")
+        return result
+    
     def get_system_info(self):
         system_info = {
             "OS -v": platform.platform(),

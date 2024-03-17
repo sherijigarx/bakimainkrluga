@@ -45,6 +45,7 @@ class MusicGenerationService(AIModelService):
         self.duration = 755  #755 tokens = 15 seconds music
         self.response = None
         self.lock = asyncio.Lock()
+        self.best_uid = self.priority_uids(self.metagraph)
         
 
     def load_prompts(self):
@@ -69,6 +70,11 @@ class MusicGenerationService(AIModelService):
                 traceback.print_exc()
 
     async def main_loop_logic(self, step):
+        # Sync and update weights logic
+        if step % 10 == 0:
+            self.metagraph.sync(subtensor=self.subtensor)
+            self.best_uid = self.priority_uids(self.metagraph)
+
         uids = self.metagraph.uids.tolist()
         # If there are more uids than scores, add more weights.
         if len(uids) > len(self.scores):
