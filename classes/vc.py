@@ -196,6 +196,7 @@ class VoiceCloningService(AIModelService):
                         os.remove(os.path.join('/tmp', existing_file))
                     except Exception as e:
                         bt.logging.error(f"Error deleting existing WAV file: {e}")
+                return cloned_file_path
 
         except Exception as e:
             pass
