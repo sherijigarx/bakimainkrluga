@@ -18,6 +18,7 @@ from lib.protocol import VoiceClone
 from lib.clone_score import CloneScore
 from classes.aimodel import AIModelService
 import wandb
+import numpy as np
 
 # Set the project root path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -153,6 +154,7 @@ class VoiceCloningService(AIModelService):
             print(f"An error occurred while processing voice clone responses: {e}")
 
     def handle_clone_output(self, response, axon, prompt=None, input_file=None):
+        txt_input = prompt if prompt else response.text_input
         try:
             if response is not None and response.clone_output is not None:
                 output = response.clone_output
@@ -183,7 +185,7 @@ class VoiceCloningService(AIModelService):
                 torchaudio.save(cloned_file_path, src=audio_data_int, sample_rate=sampling_rate)
                 try:
                     uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
-                    wandb.log({f"Voice Clone Prompt: {response.text_input}": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
+                    wandb.log({f"Voice Clone Prompt: {txt_input}": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
                     bt.logging.success(f"Voice Clone Audio file uploaded to wandb successfully for Hotkey {axon.hotkey} and uid {uid_in_metagraph}")
                 except Exception as e:
                     bt.logging.error(f"Error uploading Voice Clone Audio file to wandb: {e}")                               
