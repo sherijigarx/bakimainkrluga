@@ -43,7 +43,6 @@ class VoiceCloningService(AIModelService):
         self.filtered_axon = []
         self.filtered_axons = []
         self.responses = None
-        self.filename = ""
         self.audio_file_path = ""
         self.text_input = ""
 
@@ -78,10 +77,9 @@ class VoiceCloningService(AIModelService):
                 traceback.print_exc()
 
     async def process_huggingface_prompts(self, step):
-        if step % 100 == 0:
+        if step % 1000 == 0:
             async with self.lock:
                 bt.logging.info(f"--------------------------------- Prompt and voices are being used from HuggingFace Dataset for Voice Clone at Step: {step} ---------------------------------")
-                self.filename = ""
                 self.text_input = random.choice(self.prompts)
                 while len(self.text_input) > 256:
                     bt.logging.error(f"The length of current Prompt is greater than 256. Skipping current prompt.")
