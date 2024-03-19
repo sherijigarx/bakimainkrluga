@@ -235,7 +235,7 @@ async def vc_service(audio_file: Annotated[UploadFile, File()], write_prompt_in_
         prompt = f'"{prompt}"'  # Add quotes to the prompt if not already quoted
 
     if prompt:
-        bt.logging(f"Prompt details: {prompt}")
+        bt.logging.info(f"Prompt details: {prompt}")
 
     # Validate prompt
     if not prompt:
