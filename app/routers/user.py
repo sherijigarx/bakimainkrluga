@@ -43,9 +43,6 @@ vc_api = VC_API()
 class TTSMrequest(BaseModel):
     prompt: str 
 
-class VCRequest(BaseModel):
-    vc_prompt: str
-
 
 
 @router.post("/change_password", response_model=dict)
@@ -229,12 +226,12 @@ async def ttm_service(request: TTSMrequest, user: User = Depends(get_current_act
 
 
 @router.post("/vc_service")
-async def vc_service(audio_file: Annotated[UploadFile, File()], request: VCRequest, user: User = Depends(get_current_active_user)):
+async def vc_service(audio_file: Annotated[UploadFile, File()], prompt: str = Form(...) , user: User = Depends(get_current_active_user)):
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
 
     # Validate prompt
-    if not request.vc_prompt:
+    if not prompt:
         bt.logging.error(f"Prompt section cannot be empty.")
         raise HTTPException(status_code=400, detail="Prompt section cannot be empty.")
 
@@ -269,7 +266,7 @@ async def vc_service(audio_file: Annotated[UploadFile, File()], request: VCReque
             bt.logging.info(f"Chosen axon: {axon}, UID: {uid}")
 
             try:
-                audio_data = await vc_api.generate_voice_clone(request.vc_prompt, input_audio, sample_rate, api_axon=[axon], input_file=temp_file_path)
+                audio_data = await vc_api.generate_voice_clone(prompt, input_audio, sample_rate, api_axon=[axon], input_file=temp_file_path)
                 bt.logging.info(f"audio_file_path: {audio_data}")
             except Exception as e:
                 logging.error(f"Error generating voice clone: {e}")
