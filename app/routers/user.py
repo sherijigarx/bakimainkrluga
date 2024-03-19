@@ -112,11 +112,17 @@ async def change_user_password(
 async def tts_service(request: TTSMrequest, user: User = Depends(get_current_active_user)):
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
+
+    # Validate prompt format
+    if not request.startswith('"') or not request.endswith('"'):
+        bt.logging.error("Prompt should be enclosed in double quotes.")
+        raise HTTPException(status_code=400, detail="Add prompt in quotes.")
+
     if user.roles:
         role = user.roles[0]
         if user.subscription_end_time and datetime.utcnow() <= user.subscription_end_time and role.tts_enabled == 1:
             print(f'{user.username}, Congratulations! You have access to Text-to-Speech (TTS) service. Enjoy your experience.')
-            
+
             # Get filtered axons
             # filtered_axons = tts_api.get_filtered_axons()
             filtered_axons = tts_api._generate_filtered_axons_list()
@@ -177,6 +183,12 @@ async def tts_service(request: TTSMrequest, user: User = Depends(get_current_act
 async def ttm_service(request: TTSMrequest, user: User = Depends(get_current_active_user)):
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
+
+    # Validate prompt format
+    if not request.startswith('"') or not request.endswith('"'):
+        bt.logging.error("Prompt should be enclosed in double quotes.")
+        raise HTTPException(status_code=400, detail="Add prompt in quotes.")
+
     if user.roles:
         role = user.roles[0]
         if user.subscription_end_time and datetime.utcnow() <= user.subscription_end_time and role.ttm_enabled == 1:
@@ -235,6 +247,11 @@ async def vc_service(audio_file: Annotated[UploadFile, File()], prompt: str = Fo
     if not prompt:
         bt.logging.error(f"Prompt section cannot be empty.")
         raise HTTPException(status_code=400, detail="Prompt section cannot be empty.")
+    
+        # Validate prompt format
+    if not prompt.startswith('"') or not prompt.endswith('"'):
+        bt.logging.error("Prompt should be enclosed in double quotes.")
+        raise HTTPException(status_code=400, detail="Add prompt in quotes.")
 
     # Validate audio file
     if not audio_file:
