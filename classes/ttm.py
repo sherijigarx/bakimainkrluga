@@ -57,7 +57,6 @@ class MusicGenerationService(AIModelService):
         while True:
             try:
                 await self.main_loop_logic(step)
-                # bt.logging.info(f"_____________________________ Step TTM _____________________________: {step}")
                 step += 1
                 await asyncio.sleep(0.5)  # Adjust the sleep time as needed
                 if step % 500 == 0:

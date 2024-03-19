@@ -90,7 +90,6 @@ class TextToSpeechService(AIModelService):
             self.check_and_update_wandb_run()
             try:
                 await self.main_loop_logic(step)
-                # bt.logging.info(f"_____________________________ Step TTS _____________________________: {step}")
                 step += 1
                 await asyncio.sleep(0.5)  # Adjust the sleep time as needed
                 if step % 50 == 0 and self.config.auto_update == 'yes':
