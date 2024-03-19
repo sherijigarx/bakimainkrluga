@@ -233,7 +233,7 @@ async def vc_service(request: VCRequest, audio_file: Annotated[UploadFile, File(
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
     
-    prompt = request.prompt  # Extract the prompt from the request
+    prompt =  json.loads(request.prompt)  # Extract the prompt from the request
 
     # Validate prompt
     if not prompt:
