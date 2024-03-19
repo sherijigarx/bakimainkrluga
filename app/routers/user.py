@@ -224,10 +224,10 @@ async def ttm_service(request: TTSMrequest, user: User = Depends(get_current_act
 
 
 @router.post("/vc_service")
-async def vc_service(audio_file: Annotated[UploadFile, File()], prompt: str = Form(...) , user: User = Depends(get_current_active_user)):
+async def vc_service(audio_file: Annotated[UploadFile, File()], write_prompt_in_quotes: str = Form(...) , user: User = Depends(get_current_active_user)):
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
-    prompt = json.loads(prompt)
+    prompt = json.loads(write_prompt_in_quotes)
 
     # Check if prompt is already enclosed in quotes
     if not prompt.startswith('"') or not prompt.endswith('"'):
