@@ -228,6 +228,8 @@ async def vc_service(audio_file: Annotated[UploadFile, File()], write_prompt_in_
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
 
+    prompt = write_prompt_in_quotes  # Remove leading and trailing spaces from the prompt
+
     # Check if prompt is already enclosed in quotes
     if not prompt.startswith('"') or not prompt.endswith('"'):
         prompt = f'"{prompt}"'  # Add quotes to the prompt if not already quoted
