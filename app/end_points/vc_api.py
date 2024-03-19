@@ -17,11 +17,15 @@ class VC_API(VoiceCloningService):
         try:
             # Convert the metagraph's UIDs to a list
             uids = self.metagraph.uids.tolist()
+            total_stake_tensor = self.metagraph.total_stake.clone().detach() 
+            total_stake_mask = (total_stake_tensor >= 0).float()  # Convert boolean mask to float
+            # For the second part, where you check the IP address, let's first prepare the list
+            axon_ips = [self.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in uids]
+            # Now convert this list to a tensor, you only need to use torch.tensor here because it's coming from a Python list
+            axon_ips_tensor = torch.tensor(axon_ips, dtype=torch.float32).clone().detach()  # Make it a tensor if it's not
 
-            # Ensure both operands are PyTorch tensors before multiplication
-            queryable_axons_mask = torch.tensor(self.metagraph.total_stake >= 0, dtype=torch.float32) * torch.tensor([
-                self.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in uids
-            ], dtype=torch.float32)
+            # Now, perform the multiplication
+            queryable_axons_mask = total_stake_mask * axon_ips_tensor
 
             bt.logging.debug(f"Queryable axons mask: {queryable_axons_mask}")
             
