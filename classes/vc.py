@@ -63,7 +63,7 @@ class VoiceCloningService(AIModelService):
         while True:
             try:
                 new_tasks = await self.main_loop_logic(step)
-                # bt.logging.info(f"_____________________ Step VC _____________________ : {step}")
+                bt.logging.info(f"_____________________ Step VC _____________________ : {step}")
                 running_tasks.extend(new_tasks)
                 # Periodically check and clean up completed tasks
                 running_tasks = [task for task in running_tasks if not task.done()]
