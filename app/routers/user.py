@@ -43,6 +43,9 @@ vc_api = VC_API()
 class TTSMrequest(BaseModel):
     prompt: str 
 
+class VCRequest(BaseModel):
+    prompt: str
+
 
 
 @router.post("/change_password", response_model=dict)
@@ -112,17 +115,11 @@ async def change_user_password(
 async def tts_service(request: TTSMrequest, user: User = Depends(get_current_active_user)):
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
-
-    # Validate prompt format
-    if not request.startswith('"') or not request.endswith('"'):
-        bt.logging.error("Prompt should be enclosed in double quotes.")
-        raise HTTPException(status_code=400, detail="Add prompt in quotes.")
-
     if user.roles:
         role = user.roles[0]
         if user.subscription_end_time and datetime.utcnow() <= user.subscription_end_time and role.tts_enabled == 1:
             print(f'{user.username}, Congratulations! You have access to Text-to-Speech (TTS) service. Enjoy your experience.')
-
+            
             # Get filtered axons
             # filtered_axons = tts_api.get_filtered_axons()
             filtered_axons = tts_api._generate_filtered_axons_list()
@@ -183,12 +180,6 @@ async def tts_service(request: TTSMrequest, user: User = Depends(get_current_act
 async def ttm_service(request: TTSMrequest, user: User = Depends(get_current_active_user)):
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
-
-    # Validate prompt format
-    if not request.startswith('"') or not request.endswith('"'):
-        bt.logging.error("Prompt should be enclosed in double quotes.")
-        raise HTTPException(status_code=400, detail="Add prompt in quotes.")
-
     if user.roles:
         role = user.roles[0]
         if user.subscription_end_time and datetime.utcnow() <= user.subscription_end_time and role.ttm_enabled == 1:
@@ -238,20 +229,16 @@ async def ttm_service(request: TTSMrequest, user: User = Depends(get_current_act
 
 
 @router.post("/vc_service")
-async def vc_service(audio_file: Annotated[UploadFile, File()], prompt: str = Form(...) , user: User = Depends(get_current_active_user)):
+async def vc_service(request: VCRequest, audio_file: UploadFile = File(...), user: User = Depends(get_current_active_user)):
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
-    prompt = json.loads(prompt)
     
+    prompt = request.prompt  # Extract the prompt from the request
+
     # Validate prompt
     if not prompt:
         bt.logging.error(f"Prompt section cannot be empty.")
         raise HTTPException(status_code=400, detail="Prompt section cannot be empty.")
-    
-        # Validate prompt format
-    if not prompt.startswith('"') or not prompt.endswith('"'):
-        bt.logging.error("Prompt should be enclosed in double quotes.")
-        raise HTTPException(status_code=400, detail="Add prompt in quotes.")
 
     # Validate audio file
     if not audio_file:
@@ -263,14 +250,14 @@ async def vc_service(audio_file: Annotated[UploadFile, File()], prompt: str = Fo
         if user.subscription_end_time and datetime.utcnow() <= user.subscription_end_time and role.vc_enabled == 1:
             print("Congratulations! You have access to Voice Clone (VC) service.")
 
-            # Get filtered axons
+            # Get filtered axons (assuming vc_api is already defined elsewhere)
             filtered_axons = vc_api.get_filtered_axons()
             bt.logging.info(f"Filtered axons: {filtered_axons}")
 
             # Check if there are axons available
             if not filtered_axons:
-                bt.logging.error(f"No axons available for Text-to-Music.")
-                raise HTTPException(status_code=500, detail="No axons available for Text-to-Music.")
+                bt.logging.error(f"No axons available for Voice Clone.")
+                raise HTTPException(status_code=500, detail="No axons available for Voice Clone.")
 
             # Read the audio file and return its content
             temp_file_path = f"temp_audio_file{audio_file.filename}"  # Generate a temporary file name
@@ -298,17 +285,3 @@ async def vc_service(audio_file: Annotated[UploadFile, File()], prompt: str = Fo
             file_extension = os.path.splitext(audio_data)[1].lower()
             bt.logging.info(f"file_extension: {file_extension}")
 
-            # Process each audio file path as needed
-            if file_extension not in ['.wav', '.mp3']:
-                bt.logging.error(f"Unsupported audio format for uid: {uid}")
-                raise HTTPException(status_code=500, detail="Unsupported audio format.")
-
-            # Return the audio file along with the UID in the response body
-            return FileResponse(path=audio_data, media_type="audio/wav", filename=os.path.basename(audio_data), headers={"VC-Axon-UID": str(uid)})
-
-        else:
-            print(f"{user.username}! You do not have access to Voice Clone service or subscription is expired.")
-            raise HTTPException(status_code=401, detail=f"{user.username}! Your subscription has expired or you do not have access to the Voice Clone service.")
-    else:
-        print(f"{user.username}! You do not have any roles assigned.")
-        raise HTTPException(status_code=401, detail=F"{user.username}! User does not have any roles assigned")
