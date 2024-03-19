@@ -229,6 +229,10 @@ async def vc_service(audio_file: Annotated[UploadFile, File()], prompt: str = Fo
     print("User details:", user_dict)
     prompt = json.loads(prompt)
 
+    # Check if prompt is already enclosed in quotes
+    if not prompt.startswith('"') or not prompt.endswith('"'):
+        prompt = f'"{prompt}"'  # Add quotes to the prompt if not already quoted
+
     if prompt:
         bt.logging(f"Prompt details: {prompt}")
 
