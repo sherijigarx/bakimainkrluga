@@ -30,7 +30,6 @@ class TTS_API(TextToSpeechService):
 
             # Create a list of tuples (UID, Axon) for the filtered UIDs
             filtered_axons = [(uid, self.metagraph.neurons[uid].axon_info) for uid in filtered_uids]
-            bt.logging.info(f"Besttttttttttttttttttt UIDSssssssssssssssssssssssssssss: {self.best_uid}")
             return self.best_uid
         except Exception as e:
             print(f"An error occurred while generating filtered axons list: {e}")
