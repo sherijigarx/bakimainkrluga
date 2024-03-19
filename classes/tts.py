@@ -90,7 +90,7 @@ class TextToSpeechService(AIModelService):
             self.check_and_update_wandb_run()
             try:
                 await self.main_loop_logic(step)
-                bt.logging.info(f"_____________________________ Step TTS _____________________________: {step}")
+                # bt.logging.info(f"_____________________________ Step TTS _____________________________: {step}")
                 step += 1
                 await asyncio.sleep(0.5)  # Adjust the sleep time as needed
                 if step % 50 == 0 and self.config.auto_update == 'yes':
@@ -122,19 +122,19 @@ class TextToSpeechService(AIModelService):
         while len(g_prompt) > 256:
             bt.logging.error(f'The length of current Prompt is greater than 256. Skipping current prompt.')
             g_prompt = random.choice(g_prompts)
-        if step % 8 == 0:
-            async with self.lock:
-                filtered_axons = self.get_filtered_axons_from_combinations()
-                bt.logging.info(f"Prompt are being used from HuggingFace Dataset for TTS at Step: {step}")
-                bt.logging.info(f"______________Prompt______________: {g_prompt}")
-                responses = self.query_network(filtered_axons, g_prompt)
-                self.process_responses(filtered_axons, responses, g_prompt)
+        # if step % 8 == 0:
+        async with self.lock:
+            filtered_axons = self.get_filtered_axons_from_combinations()
+            bt.logging.info(f"Prompt are being used from HuggingFace Dataset for TTS at Step: {step}")
+            bt.logging.info(f"______________Prompt______________: {g_prompt}")
+            responses = self.query_network(filtered_axons, g_prompt)
+            self.process_responses(filtered_axons, responses, g_prompt)
 
-                if self.last_reset_weights_block + 1800 < self.current_block:
-                    bt.logging.trace(f"Clearing weights for validators and nodes without IPs")
-                    self.last_reset_weights_block = self.current_block        
-                    # set all nodes without ips set to 0
-                    self.scores = self.scores * torch.Tensor([self.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in self.metagraph.uids])
+            if self.last_reset_weights_block + 1800 < self.current_block:
+                bt.logging.trace(f"Clearing weights for validators and nodes without IPs")
+                self.last_reset_weights_block = self.current_block        
+                # set all nodes without ips set to 0
+                self.scores = self.scores * torch.Tensor([self.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in self.metagraph.uids])
     
     def query_network(self,filtered_axons, prompt):
         # Network querying logic
