@@ -143,7 +143,7 @@ class TextToSpeechService(AIModelService):
             filtered_axons,
             lib.protocol.TextToSpeech(text_input=prompt),
             deserialize=True,
-            timeout=5,
+            timeout=50,
         )
         return responses
     

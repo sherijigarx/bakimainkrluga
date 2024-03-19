@@ -131,7 +131,7 @@ class VoiceCloningService(AIModelService):
                 filtered_axons,
                 lib.protocol.VoiceClone(text_input=text_input, clone_input=clone_input, sample_rate=sample_rate, hf_voice_id="name"), 
                 deserialize=True,
-                timeout=15
+                timeout=150
             )
             # Process the responses if needed
             processed_vc_file = self.process_voice_clone_responses(filtered_axons, text_input, input_file)
