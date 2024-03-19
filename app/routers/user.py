@@ -110,6 +110,9 @@ async def change_user_password(
 async def tts_service(request: TTSMrequest, user: User = Depends(get_current_active_user)):
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
+    print("Request details:", request)
+
+    # Check if the user has a subscription
     if user.roles:
         role = user.roles[0]
         if user.subscription_end_time and datetime.utcnow() <= user.subscription_end_time and role.tts_enabled == 1:
@@ -175,6 +178,8 @@ async def tts_service(request: TTSMrequest, user: User = Depends(get_current_act
 async def ttm_service(request: TTSMrequest, user: User = Depends(get_current_active_user)):
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
+
+    #check if the user has subscription or not
     if user.roles:
         role = user.roles[0]
         if user.subscription_end_time and datetime.utcnow() <= user.subscription_end_time and role.ttm_enabled == 1:
@@ -285,3 +290,17 @@ async def vc_service(audio_file: Annotated[UploadFile, File()], prompt: str = Fo
             file_extension = os.path.splitext(audio_data)[1].lower()
             bt.logging.info(f"file_extension: {file_extension}")
 
+            # Process each audio file path as needed
+            if file_extension not in ['.wav', '.mp3']:
+                bt.logging.error(f"Unsupported audio format for uid: {uid}")
+                raise HTTPException(status_code=500, detail="Unsupported audio format.")
+
+            # Return the audio file along with the UID in the response body
+            return FileResponse(path=audio_data, media_type="audio/wav", filename=os.path.basename(audio_data), headers={"VC-Axon-UID": str(uid)})
+
+        else:
+            print(f"{user.username}! You do not have access to Voice Clone service or subscription is expired.")
+            raise HTTPException(status_code=401, detail=f"{user.username}! Your subscription has expired or you do not have access to the Voice Clone service.")
+    else:
+        print(f"{user.username}! You do not have any roles assigned.")
+        raise HTTPException(status_code=401, detail=F"{user.username}! User does not have any roles assigned")
