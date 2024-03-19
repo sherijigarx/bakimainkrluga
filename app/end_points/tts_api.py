@@ -20,7 +20,11 @@ class TTS_API(TextToSpeechService):
 
             # If self.metagraph.total_stake is already a tensor, you can directly use .clone().detach()
             # If it's not a tensor, convert it into one using torch.tensor() just once here
-            total_stake_tensor = torch.tensor(self.metagraph.total_stake, dtype=torch.float32).clone().detach()  # Ensure this is a tensor
+            # total_stake_tensor = torch.tensor(self.metagraph.total_stake, dtype=torch.float32).clone().detach()
+            # Directly use the existing tensor without re-creating it
+            total_stake_tensor = self.metagraph.total_stake.clone().detach()  # No need to recreate it as a tensor
+            # Now total_stake_tensor is a detached copy of the original, you can use it for further computations
+            # Ensure this is a tensor
             total_stake_mask = (total_stake_tensor >= 0).float()  # Convert boolean mask to float
 
             # For the second part, where you check the IP address, let's first prepare the list
