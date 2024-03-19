@@ -40,7 +40,7 @@ vc_api = VC_API()
 
 
 # Define a Pydantic model for the request body
-class TTSMVCrequest(BaseModel):
+class TTSMrequest(BaseModel):
     prompt: str 
 
 @router.post("/change_password", response_model=dict)
@@ -107,7 +107,7 @@ async def change_user_password(
 
 
 @router.post("/tts_service/")
-async def tts_service(request: TTSMVCrequest, user: User = Depends(get_current_active_user)):
+async def tts_service(request: TTSMrequest, user: User = Depends(get_current_active_user)):
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
     if user.roles:
@@ -172,7 +172,7 @@ async def tts_service(request: TTSMVCrequest, user: User = Depends(get_current_a
 
 # Endpoint for ttm_service
 @router.post("/ttm_service")
-async def ttm_service(request: TTSMVCrequest, user: User = Depends(get_current_active_user)):
+async def ttm_service(request: TTSMrequest, user: User = Depends(get_current_active_user)):
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
     if user.roles:
@@ -224,15 +224,15 @@ async def ttm_service(request: TTSMVCrequest, user: User = Depends(get_current_a
 
 
 @router.post("/vc_service")
-async def vc_service(audio_file: Annotated[UploadFile, File()], request: TTSMVCrequest , user: User = Depends(get_current_active_user)):
+async def vc_service(audio_file: Annotated[UploadFile, File()], prompt: str = Form(...) , user: User = Depends(get_current_active_user)):
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
 
-    if request.prompt:
-        bt.logging(f"Prompt details: {request.vc_prompt}")
+    if prompt:
+        bt.logging(f"Prompt details: {prompt}")
 
     # Validate prompt
-    if not request.prompt:
+    if not prompt:
         bt.logging.error(f"Prompt section cannot be empty.")
         raise HTTPException(status_code=400, detail="Prompt section cannot be empty.")
 
