@@ -125,7 +125,7 @@ class TextToSpeechService(AIModelService):
         if step % 1 == 0:
             async with self.lock:
                 filtered_axons = self.get_filtered_axons_from_combinations()
-                bt.logging.info(f"Prompt are being used from HuggingFace Dataset for TTS at Step: {step}")
+                bt.logging.info(f"--------------------------------- Prompt are being used from HuggingFace Dataset for TTS at Step: {step} ---------------------------------")
                 bt.logging.info(f"______________Prompt______________: {g_prompt}")
                 responses = self.query_network(filtered_axons, g_prompt)
                 self.process_responses(filtered_axons, responses, g_prompt)
