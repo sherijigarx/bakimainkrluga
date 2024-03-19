@@ -29,10 +29,6 @@ sys.path.insert(0, audio_subnet_path)
 class TextToSpeechService(AIModelService):
     def __init__(self):
         super().__init__()  # Initializes base class components
-        self.setup_wallet()
-        self.setup_subtensor()
-        self.setup_dendrite()
-        self.setup_metagraph()
         self.load_prompts()
         self.total_dendrites_per_query = 15
         self.minimum_dendrites_per_query = 3  # Example value, adjust as needed

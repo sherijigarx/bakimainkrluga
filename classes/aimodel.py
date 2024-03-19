@@ -31,10 +31,10 @@ class AIModelService:
         self.sys_info = self.get_system_info()
         self.setup_paths()
         self.setup_logging()
-        # self.setup_wallet()
-        # self.setup_subtensor()
-        # self.setup_dendrite()
-        # self.setup_metagraph()
+        self.setup_wallet()
+        self.setup_subtensor()
+        self.setup_dendrite()
+        self.setup_metagraph()
         self.priority_uids(self.metagraph)
         self.vcdnp = self.config.vcdnp
         self.max_mse = self.config.max_mse
