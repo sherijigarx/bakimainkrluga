@@ -26,9 +26,6 @@ class TTS_API(TextToSpeechService):
 
             # Now, perform the multiplication
             queryable_axons_mask = total_stake_mask * axon_ips_tensor
-
-
-            bt.logging.debug(f"Queryable axons mask: {queryable_axons_mask}")
             
             # Filter the UIDs based on the queryable_axons_mask
             filtered_uids = [uid for uid, queryable in zip(uids, queryable_axons_mask) if queryable.item()]
