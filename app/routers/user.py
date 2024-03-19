@@ -107,7 +107,7 @@ async def change_user_password(
 
 
 @router.post("/tts_service/")
-async def tts_service(request: TTSMrequest, user: User = Depends(get_current_active_user)):
+async def tts_service(request: TTSMVCrequest, user: User = Depends(get_current_active_user)):
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
     if user.roles:
@@ -172,7 +172,7 @@ async def tts_service(request: TTSMrequest, user: User = Depends(get_current_act
 
 # Endpoint for ttm_service
 @router.post("/ttm_service")
-async def ttm_service(request: TTSMrequest, user: User = Depends(get_current_active_user)):
+async def ttm_service(request: TTSMVCrequest, user: User = Depends(get_current_active_user)):
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
     if user.roles:
