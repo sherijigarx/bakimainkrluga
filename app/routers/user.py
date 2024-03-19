@@ -43,8 +43,8 @@ vc_api = VC_API()
 class TTSMrequest(BaseModel):
     prompt: str 
 
-# class VCRequest(BaseModel):
-#     vc_prompt: str
+class VCRequest(BaseModel):
+    vc_prompt: str
 
 
 
@@ -228,60 +228,60 @@ async def ttm_service(request: TTSMrequest, user: User = Depends(get_current_act
         raise HTTPException(status_code=401, detail=f"{user.username}! Your does not have any roles assigned")
 
 
-# @router.post("/vc_service")
-# async def vc_service(audio_file: Annotated[UploadFile, File()], request: VCRequest, user: User = Depends(get_current_active_user)):
-#     user_dict = jsonable_encoder(user)
-#     print("User details:", user_dict)
+@router.post("/vc_service")
+async def vc_service(audio_file: Annotated[UploadFile, File()], request: VCRequest, user: User = Depends(get_current_active_user)):
+    user_dict = jsonable_encoder(user)
+    print("User details:", user_dict)
     
-#     prompt =  json.loads(request.prompt)  # Extract the prompt from the request
+    prompt =  json.loads(request.vc_prompt)  # Extract the prompt from the request
 
-#     # Validate prompt
-#     if not prompt:
-#         bt.logging.error(f"Prompt section cannot be empty.")
-#         raise HTTPException(status_code=400, detail="Prompt section cannot be empty.")
+    # Validate prompt
+    if not prompt:
+        bt.logging.error(f"Prompt section cannot be empty.")
+        raise HTTPException(status_code=400, detail="Prompt section cannot be empty.")
 
-#     # Validate audio file
-#     if not audio_file:
-#         bt.logging.error(f"Audio file is required.")
-#         raise HTTPException(status_code=400, detail="Audio file is required.")
+    # Validate audio file
+    if not audio_file:
+        bt.logging.error(f"Audio file is required.")
+        raise HTTPException(status_code=400, detail="Audio file is required.")
 
-#     if user.roles:
-#         role = user.roles[0]
-#         if user.subscription_end_time and datetime.utcnow() <= user.subscription_end_time and role.vc_enabled == 1:
-#             print("Congratulations! You have access to Voice Clone (VC) service.")
+    if user.roles:
+        role = user.roles[0]
+        if user.subscription_end_time and datetime.utcnow() <= user.subscription_end_time and role.vc_enabled == 1:
+            print("Congratulations! You have access to Voice Clone (VC) service.")
 
-#             # Get filtered axons (assuming vc_api is already defined elsewhere)
-#             filtered_axons = vc_api.get_filtered_axons()
-#             bt.logging.info(f"Filtered axons: {filtered_axons}")
+            # Get filtered axons (assuming vc_api is already defined elsewhere)
+            filtered_axons = vc_api.get_filtered_axons()
+            bt.logging.info(f"Filtered axons: {filtered_axons}")
 
-#             # Check if there are axons available
-#             if not filtered_axons:
-#                 bt.logging.error(f"No axons available for Voice Clone.")
-#                 raise HTTPException(status_code=500, detail="No axons available for Voice Clone.")
+            # Check if there are axons available
+            if not filtered_axons:
+                bt.logging.error(f"No axons available for Voice Clone.")
+                raise HTTPException(status_code=500, detail="No axons available for Voice Clone.")
 
-#             # Read the audio file and return its content
-#             temp_file_path = f"temp_audio_file{audio_file.filename}"  # Generate a temporary file name
-#             with open(temp_file_path, 'wb+') as f:
-#                 f.write(await audio_file.read())  # Write the contents to a temporary file
-#             waveform, sample_rate = torchaudio.load(temp_file_path)  
-#             input_audio = waveform.tolist()
+            # Read the audio file and return its content
+            temp_file_path = f"temp_audio_file{audio_file.filename}"  # Generate a temporary file name
+            with open(temp_file_path, 'wb+') as f:
+                f.write(await audio_file.read())  # Write the contents to a temporary file
+            waveform, sample_rate = torchaudio.load(temp_file_path)  
+            input_audio = waveform.tolist()
 
-#             # Choose a VC axon randomly
-#             uid, axon = random.choice(filtered_axons)
-#             bt.logging.info(f"Chosen axon: {axon}, UID: {uid}")
+            # Choose a VC axon randomly
+            uid, axon = random.choice(filtered_axons)
+            bt.logging.info(f"Chosen axon: {axon}, UID: {uid}")
 
-#             try:
-#                 audio_data = await vc_api.generate_voice_clone(prompt, input_audio, sample_rate, api_axon=[axon], input_file=temp_file_path)
-#                 bt.logging.info(f"audio_file_path: {audio_data}")
-#             except Exception as e:
-#                 logging.error(f"Error generating voice clone: {e}")
-#                 raise HTTPException(status_code=500, detail="Error generating voice clone")
+            try:
+                audio_data = await vc_api.generate_voice_clone(prompt, input_audio, sample_rate, api_axon=[axon], input_file=temp_file_path)
+                bt.logging.info(f"audio_file_path: {audio_data}")
+            except Exception as e:
+                logging.error(f"Error generating voice clone: {e}")
+                raise HTTPException(status_code=500, detail="Error generating voice clone")
 
-#             # Ensure that audio_data is defined even if an exception occurred
-#             if not audio_data:
-#                 bt.logging.error(f"Voice clone audio data not generated.")
-#                 raise HTTPException(status_code=404, detail="Voice clone audio data not generated")
+            # Ensure that audio_data is defined even if an exception occurred
+            if not audio_data:
+                bt.logging.error(f"Voice clone audio data not generated.")
+                raise HTTPException(status_code=404, detail="Voice clone audio data not generated")
 
-#             file_extension = os.path.splitext(audio_data)[1].lower()
-#             bt.logging.info(f"file_extension: {file_extension}")
+            file_extension = os.path.splitext(audio_data)[1].lower()
+            bt.logging.info(f"file_extension: {file_extension}")
 
