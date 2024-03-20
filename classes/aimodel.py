@@ -171,21 +171,6 @@ class AIModelService:
 
         return input_prompt
 
-    # Input prompts for testing
-    input_prompts = [
-        "The construction project required over 2,345,000 bricks to complete.",
-        "5",
-        "I was born at 24 July 2024",
-        "Isharab was born on the 4th of March, 1999",
-        "69th",
-        "The construction project required over 140,000,000 bricks to complete."
-    ]
-
-    # Conversion and printing results
-    for prompt in input_prompts:
-        print(convert_numeric_values(prompt))
-
-
     def setup_logging(self):
         # Set up logging with the provided configuration and directory
         self.config.full_path = os.path.expanduser(
