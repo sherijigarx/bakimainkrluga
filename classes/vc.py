@@ -217,8 +217,8 @@ class VoiceCloningService(AIModelService):
         try:
             clone_score = CloneScore()
             # Call the scoring function from lib.reward
-            score, max_mse = clone_score.compare_audio(input_path , output_path, text_input, self.max_mse)
-            self.max_mse = max_mse
+            score = clone_score.compare_audio(input_path , output_path, text_input, self.max_mse)
+            # self.max_mse = max_mse
             return score
         except Exception as e:
             bt.logging.error(f"Error scoring output: {e}")
