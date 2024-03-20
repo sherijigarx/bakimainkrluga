@@ -3497,8 +3497,8 @@ def calculate_audio_quality_scores(data, wer):
 
         # Round the composite score to 3 decimal places
         data['composite_score'] = data['composite_score'].round(3)
-        if wer >= 0.7:
-            bt.logging.info(f"........Word Error rate is greater than 0.7, Zero Score will be rewarded.......: {wer}")
+        if wer >= 0.5:
+            bt.logging.info(f"........Word Error rate is greater than 0.5, Zero Score will be rewarded.......: {wer}")
             data['composite_score'] = 0
         return data['composite_score'][0]
 
