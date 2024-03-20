@@ -27,6 +27,7 @@ audio_subnet_path = os.path.abspath(project_root)
 # Add the project root and 'AudioSubnet' directories to sys.path
 sys.path.insert(0, project_root)
 sys.path.insert(0, audio_subnet_path)
+from classes.corcel_prompt import get_TTM
 
 
 class MusicGenerationService(AIModelService):
@@ -69,6 +70,12 @@ class MusicGenerationService(AIModelService):
                 traceback.print_exc()
 
     async def main_loop_logic(self, step):
+        g_prompt = None
+        try:
+            c_prompt = get_TTM()
+        except Exception as e:
+            bt.logging.error(f"An error occurred while fetching prompt: {e}")
+            c_prompt = None
         # Sync and update weights logic
         if step % 10 == 0:
             self.metagraph.sync(subtensor=self.subtensor)
@@ -82,15 +89,26 @@ class MusicGenerationService(AIModelService):
             new_scores = torch.zeros(size_difference, dtype=torch.float32)
             self.scores = torch.cat((self.scores, new_scores))
             del new_scores
-        g_prompts = self.load_prompts()
-        g_prompt = random.choice(g_prompts)
-        while len(g_prompt) > 256:
-            bt.logging.error(f'The length of current Prompt is greater than 256. Skipping current prompt.')
-            g_prompt = random.choice(g_prompts)
+
         if step:
             async with self.lock:
+                # Use the API prompt if available; otherwise, load prompts from HuggingFace
+                if c_prompt:
+                    bt.logging.info(f"--------------------------------- Prompt are being used from Corcel API for TTM at Step: {step} --------------------------------- ")
+                    g_prompt = self.convert_numeric_values(c_prompt)  # Use the prompt from the API
+                else:
+                    # Fetch prompts from HuggingFace if API failed
+                    bt.logging.info(f"--------------------------------- Prompt are being used from HuggingFace Dataset for TTM at Step: {step} --------------------------------- ")
+                    g_prompts = self.load_prompts()
+                    g_prompt = random.choice(g_prompts)  # Choose a random prompt from HuggingFace
+                    g_prompt = self.convert_numeric_values(g_prompt)
+
+                while len(g_prompt) > 256:
+                    bt.logging.error(f'The length of current Prompt is greater than 256. Skipping current prompt.')
+                    g_prompt = random.choice(g_prompts)
+                    g_prompt = self.convert_numeric_values(g_prompt)
+
                 filtered_axons = self.get_filtered_axons_from_combinations()
-                bt.logging.info(f"--------------------------------- Prompt are being used from HuggingFace Dataset for Text-To-Music: {step} ---------------------------------")
                 bt.logging.info(f"______________TTM-Prompt______________: {g_prompt}")
                 responses = self.query_network(filtered_axons,g_prompt)
                 self.process_responses(filtered_axons,responses, g_prompt)

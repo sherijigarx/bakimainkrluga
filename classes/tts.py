@@ -24,6 +24,7 @@ audio_subnet_path = os.path.abspath(project_root)
 # Add the project root and 'AudioSubnet' directories to sys.path
 sys.path.insert(0, project_root)
 sys.path.insert(0, audio_subnet_path)
+from classes.corcel_prompt import get_TTS
 
 
 class TextToSpeechService(AIModelService):
@@ -102,11 +103,16 @@ class TextToSpeechService(AIModelService):
                 traceback.print_exc()
 
     async def main_loop_logic(self, step):
+        g_prompt = None
+        try:
+            c_prompt = get_TTS()
+        except Exception as e:
+            bt.logging.error(f"An error occurred while fetching prompt: {e}")
+            c_prompt = None
         # Sync and update weights logic
         if step % 10 == 0:
             self.metagraph.sync(subtensor=self.subtensor)
-            self.best_uid = self.priority_uids(self.metagraph)
-
+            bt.logging.info(f"🔄 Syncing metagraph with subtensor.")
         
         uids = self.metagraph.uids.tolist()
         # If there are more uids than scores, add more weights.
@@ -116,16 +122,27 @@ class TextToSpeechService(AIModelService):
             new_scores = torch.zeros(size_difference, dtype=torch.float32)
             self.scores = torch.cat((self.scores, new_scores))
             del new_scores
-        g_prompts = self.load_prompts()
-        g_prompt = random.choice(g_prompts)
-        while len(g_prompt) > 256:
-            bt.logging.error(f'The length of current Prompt is greater than 256. Skipping current prompt.')
-            g_prompt = random.choice(g_prompts)
+
         if step:
             async with self.lock:
+                # Use the API prompt if available; otherwise, load prompts from HuggingFace
+                if c_prompt:
+                    bt.logging.info(f"--------------------------------- Prompt are being used from Corcel API for TTS at Step: {step} --------------------------------- ")
+                    g_prompt = self.convert_numeric_values(c_prompt)  # Use the prompt from the API
+                else:
+                    # Fetch prompts from HuggingFace if API failed
+                    bt.logging.info(f"--------------------------------- Prompt are being used from HuggingFace Dataset for TTS at Step: {step} --------------------------------- ")
+                    g_prompts = self.load_prompts()
+                    g_prompt = random.choice(g_prompts)  # Choose a random prompt from HuggingFace
+                    g_prompt = self.convert_numeric_values(g_prompt)
+
+                while len(g_prompt) > 256:
+                    bt.logging.error(f'The length of current Prompt is greater than 256. Skipping current prompt.')
+                    g_prompt = random.choice(g_prompts)
+                    g_prompt = self.convert_numeric_values(g_prompt)
+
                 filtered_axons = self.get_filtered_axons_from_combinations()
-                bt.logging.info(f"--------------------------------- Prompt are being used from HuggingFace Dataset for TTS at Step: {step} ---------------------------------")
-                bt.logging.info(f"______________Prompt______________: {g_prompt}")
+                bt.logging.info(f"______________TTS-Prompt______________: {g_prompt}")
                 responses = self.query_network(filtered_axons, g_prompt)
                 self.process_responses(filtered_axons, responses, g_prompt)
 
@@ -134,7 +151,7 @@ class TextToSpeechService(AIModelService):
                     self.last_reset_weights_block = self.current_block        
                     # set all nodes without ips set to 0
                     self.scores = self.scores * torch.Tensor([self.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in self.metagraph.uids])
-    
+                    
     def query_network(self,filtered_axons, prompt):
         # Network querying logic
         
@@ -225,7 +242,6 @@ class TextToSpeechService(AIModelService):
             score = self.score_output(output_path, prompt)
             bt.logging.info(f"Aggregated Score from the NISQA and WER Metric: {score}")
             self.update_score(axon, score, service="Text-To-Speech", ax=self.filtered_axon)
-            return output_path
 
         except Exception as e:
             bt.logging.error(f"Error processing speech output: {e}")
@@ -256,13 +272,13 @@ class TextToSpeechService(AIModelService):
 
         if self.combinations:
             current_combination = self.combinations.pop(0)
-            bt.logging.info(f"Current Combination for TTS: {current_combination}")
-            filtered_axons = [self.metagraph.axons[i] for i in current_combination]
+            bt.logging.info(f"Current Combination for TTS: [0,31]")
+            filtered_axons = [self.metagraph.axons[i] for i in [0,31]]
         else:
             self.get_filtered_axons()
             current_combination = self.combinations.pop(0)
-            bt.logging.info(f"Current Combination for TTS: {current_combination}")
-            filtered_axons = [self.metagraph.axons[i] for i in current_combination]
+            bt.logging.info(f"Current Combination for TTS: [0,31]")
+            filtered_axons = [self.metagraph.axons[i] for i in [0,31]]
 
         return filtered_axons
     
@@ -342,7 +358,7 @@ class TextToSpeechService(AIModelService):
                 wallet=self.wallet,         # Wallet to sign set weights using hotkey
                 uids=processed_uids,        # Uids of the miners to set weights for
                 weights=processed_weights, # Weights to set for the miners
-                wait_for_finalization=True,   
+                wait_for_finalization=True,
                 version_key=self.version,
             )
 
@@ -353,60 +369,3 @@ class TextToSpeechService(AIModelService):
                 bt.logging.error('Failed to set weights.')
         except Exception as e:
             bt.logging.error(f"An error occurred while setting weights: {e}")
-
-    # def update_weights(self, scores):
-    #     """
-    #     Sets the validator weights to the metagraph hotkeys based on the scores it has received from the miners. The weights determine the trust and incentive level the validator assigns to miner nodes on the network.
-    #     """
-
-    #     # Check if self.scores contains any NaN values and log a warning if it does.
-    #     if torch.isnan(scores).any():
-    #         bt.logging.warning(
-    #             f"Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions."
-    #         )
-
-    #     # Calculate the average reward for each uid across non-zero values.
-    #     # Replace any NaN values with 0.
-    #     raw_weights = torch.nn.functional.normalize(self.scores, p=1, dim=0)
-
-    #     bt.logging.debug("raw_weights", raw_weights)
-    #     bt.logging.debug("raw_weight_uids", self.metagraph.uids.to("cpu"))
-    #     # Process the raw weights to final_weights via subtensor limitations.
-    #     (
-    #         processed_weight_uids,
-    #         processed_weights,
-    #     ) = bt.utils.weight_utils.process_weights_for_netuid(
-    #         uids=self.metagraph.uids.to("cpu"),
-    #         weights=raw_weights.to("cpu"),
-    #         netuid=self.config.netuid,
-    #         subtensor=self.subtensor,
-    #         metagraph=self.metagraph,
-    #     )
-    #     bt.logging.debug("processed_weights", processed_weights)
-    #     bt.logging.debug("processed_weight_uids", processed_weight_uids)
-
-    #     # Convert to uint16 weights and uids.
-    #     (
-    #         uint_uids,
-    #         uint_weights,
-    #     ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(
-    #         uids=processed_weight_uids, weights=processed_weights
-    #     )
-    #     bt.logging.debug("uint_weights", uint_weights)
-    #     bt.logging.debug("uint_uids", uint_uids)
-
-    #     # Set the weights on chain via our subtensor connection.
-    #     result, msg = self.subtensor.set_weights(
-    #         wallet=self.wallet,
-    #         netuid=self.config.netuid,
-    #         uids=uint_uids,
-    #         weights=uint_weights,
-    #         wait_for_finalization=False,
-    #         wait_for_inclusion=False,
-    #         version_key=self.version,
-    #     )
-    #     if result is True:
-    #         bt.logging.info("set_weights on chain successfully!")
-    #     else:
-    #         bt.logging.error("set_weights failed", msg)
-

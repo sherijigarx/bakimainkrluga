@@ -17,6 +17,7 @@ import lib.protocol
 from lib.protocol import VoiceClone
 from lib.clone_score import CloneScore
 from classes.aimodel import AIModelService
+from classes.corcel_prompt import get_VC
 import wandb
 import numpy as np
 
@@ -76,14 +77,28 @@ class VoiceCloningService(AIModelService):
                 traceback.print_exc()
 
     async def process_huggingface_prompts(self, step):
+        try:
+            c_prompt = get_VC()
+        except Exception as e:
+            bt.logging.error(f"An error occurred while fetching prompt: {e}")
+            c_prompt = None
+
         if step % 250 == 0:
             async with self.lock:
-                bt.logging.info(f"--------------------------------- Prompt and voices are being used from HuggingFace Dataset for Voice Clone at Step: {step} ---------------------------------")
-                self.text_input = random.choice(self.prompts)
+                if c_prompt:
+                    bt.logging.info(f"--------------------------------- Prompt and voices are being used from Corcel API for Voice Clone at Step: {step} ---------------------------------")
+                    self.text_input = self.convert_numeric_values(c_prompt)  # Use the prompt from the API
+                else:
+                    # Fetch prompts from HuggingFace if API failed
+                    bt.logging.info(f"--------------------------------- Prompt and voices are being used from HuggingFace Dataset for Voice Clone at Step: {step} ---------------------------------")
+                    self.text_input = random.choice(self.prompts)
+                    self.text_input = self.convert_numeric_values(self.text_input)
                 while len(self.text_input) > 256:
                     bt.logging.error(f"The length of current Prompt is greater than 256. Skipping current prompt.")
                     self.text_input = random.choice(self.prompts)
+                    self.text_input = self.convert_numeric_values(self.text_input)
 
+                bt.logging.info(f"______________VC-Prompt______________: {self.text_input}")
                 vc_voice = random.choice(self.audio_files)
                 audio_array = vc_voice['array']
                 sampling_rate = vc_voice['sampling_rate']
