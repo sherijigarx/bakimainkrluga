@@ -165,7 +165,7 @@ class TextToSpeechService(AIModelService):
     
     def update_block(self):
         self.current_block = self.subtensor.block
-        if self.current_block - self.last_updated_block > 100:
+        if self.current_block - self.last_updated_block > 50:
             bt.logging.info(f"Updating weights. Last update was at block {self.last_updated_block}")
             bt.logging.info(f"Current block is {self.current_block}")
             self.update_weights(self.scores)
@@ -173,7 +173,7 @@ class TextToSpeechService(AIModelService):
         else:
             bt.logging.info(f"Updating weights. Last update was at block:  {self.last_updated_block}")
             bt.logging.info(f"Current block is: {self.current_block}")
-            bt.logging.info(f"Next update will be at block: {self.last_updated_block + 100}")
+            bt.logging.info(f"Next update will be at block: {self.last_updated_block + 50}")
             bt.logging.info(f"Skipping weight update. Last update was at block {self.last_updated_block}")
 
     def process_responses(self,filtered_axons, responses, prompt):
@@ -272,13 +272,13 @@ class TextToSpeechService(AIModelService):
 
         if self.combinations:
             current_combination = self.combinations.pop(0)
-            bt.logging.info(f"Current Combination for TTS: [0,31]")
-            filtered_axons = [self.metagraph.axons[i] for i in [0,31]]
+            bt.logging.info(f"Current Combination for TTS: {current_combination}")
+            filtered_axons = [self.metagraph.axons[i] for i in current_combination]
         else:
             self.get_filtered_axons()
             current_combination = self.combinations.pop(0)
-            bt.logging.info(f"Current Combination for TTS: [0,31]")
-            filtered_axons = [self.metagraph.axons[i] for i in [0,31]]
+            bt.logging.info(f"Current Combination for TTS: {current_combination}")
+            filtered_axons = [self.metagraph.axons[i] for i in current_combination]
 
         return filtered_axons
     
