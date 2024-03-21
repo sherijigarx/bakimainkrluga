@@ -75,6 +75,8 @@ class CloneScore:
         # Calculate Final Score considering Decay Score and NISQA score
         if nisqa_wer_score == 0:
             final_score = 0
+        elif decay_score == 0:
+            final_score = 0
         else:
             final_score = (decay_score + nisqa_wer_score) / 2
         bt.logging.info(f"Final Score for Voice Cloning: {final_score}")
