@@ -29,10 +29,13 @@ from classes.corcel_prompt import get_TTS
 
 class TextToSpeechService(AIModelService):
     def __init__(self):
-        super(AIModelService.get_instance(), self).__init__()  # This is the new way, using the singleton instance
+        # Instead of super(), use the singleton instance directly for required actions
+        self.ai_model_service = AIModelService.get_instance()  # Access the shared instance
+        self.config = self.ai_model_service.config  # Example of using properties directly
         self.load_prompts()
         self.total_dendrites_per_query = 15
-        self.minimum_dendrites_per_query = 3  # Example value, adjust as needed
+        self.minimum_dendrites_per_query = 3
+        # Continue with other initializations specific to TextToSpeechService
         self.current_block = self.subtensor.block
         self.filtered_axon = []
         self.last_updated_block = self.current_block - (self.current_block % 100)
