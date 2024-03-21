@@ -42,7 +42,7 @@ class TextToSpeechService(AIModelService):
         self.last_reset_weights_block = self.current_block
         self.p_index = 0
         self.last_run_start_time = dt.datetime.now()
-        self.tao = self.ai_model_service.metagraph.neurons[self.uid].stake.tao
+        self.tao = self.ai_model_service.metagraph.neurons[self.ai_model_service.uid].stake.tao
         self.combinations = []
         self.lock = asyncio.Lock()
         self.best_uid = self.ai_model_service.priority_uids(self.metagraph)
