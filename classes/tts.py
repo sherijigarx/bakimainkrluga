@@ -36,16 +36,16 @@ class TextToSpeechService(AIModelService):
         self.total_dendrites_per_query = 15
         self.minimum_dendrites_per_query = 3
         # Continue with other initializations specific to TextToSpeechService
-        self.current_block = self.subtensor.block
+        self.current_block = self.ai_model_service.subtensor.block
         self.filtered_axon = []
         self.last_updated_block = self.current_block - (self.current_block % 100)
         self.last_reset_weights_block = self.current_block
         self.p_index = 0
         self.last_run_start_time = dt.datetime.now()
-        self.tao = self.metagraph.neurons[self.uid].stake.tao
+        self.tao = self.ai_model_service.metagraph.neurons[self.uid].stake.tao
         self.combinations = []
         self.lock = asyncio.Lock()
-        self.best_uid = self.priority_uids(self.metagraph)
+        self.best_uid = self.ai_model_service.priority_uids(self.metagraph)
         
     def load_prompts(self):
         gs_dev = load_dataset("etechgrid/Prompts_for_Voice_cloning_and_TTS")
