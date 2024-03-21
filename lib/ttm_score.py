@@ -25,16 +25,6 @@ class MetricEvaluator:
         return snr
 
     @staticmethod
-    def calculate_smoothness(file_path, silence_threshold=1e-10):
-        audio_signal, _ = torchaudio.load(file_path)
-        if torch.max(audio_signal) < silence_threshold:
-            return 0
-        amplitude_envelope = torch.abs(torch.from_numpy(np.abs(hilbert(audio_signal[0].numpy()))))
-        amplitude_differences = torch.abs(amplitude_envelope[1:] - amplitude_envelope[:-1])
-        smoothness = torch.mean(amplitude_differences)
-        return smoothness.item()
-
-    @staticmethod
     def calculate_consistency(file_path, text):
         try:
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -69,12 +59,6 @@ class MusicQualityEvaluator:
             bt.logging.error(f"Failed to calculate SNR")
 
         try:
-            smoothness_score = MetricEvaluator.calculate_smoothness(file_path)
-            bt.logging.info(f'.......Smoothness Score......: {smoothness_score}')
-        except:
-            bt.logging.error(f"Failed to calculate Smoothness score")
-
-        try:
             consistency_score = MetricEvaluator.calculate_consistency(file_path, text)
             bt.logging.info(f'.......Consistency Score......: {consistency_score}')
         except:
@@ -82,9 +66,8 @@ class MusicQualityEvaluator:
 
         # Normalize scores and calculate aggregate score
         normalized_snr = 1 / (1 + np.exp(-snr_score / 20))
-        normalized_smoothness = 1 - smoothness_score if smoothness_score is not None else 1
         normalized_consistency = (consistency_score + 1) / 2 if consistency_score is not None and consistency_score >= 0 else 0
 
-        aggregate_score = (normalized_snr + normalized_smoothness + normalized_consistency) / 3.0 if consistency_score >=0 else 0
+        aggregate_score = (normalized_snr + normalized_consistency) / 2.0 if consistency_score > 0.5 else 0
         bt.logging.info(f'.......Aggregate Score......: {aggregate_score}')
         return aggregate_score
