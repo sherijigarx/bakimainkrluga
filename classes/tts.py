@@ -45,7 +45,7 @@ class TextToSpeechService(AIModelService):
         self.tao = self.ai_model_service.metagraph.neurons[self.ai_model_service.uid].stake.tao
         self.combinations = []
         self.lock = asyncio.Lock()
-        self.best_uid = self.ai_model_service.priority_uids(self.metagraph)
+        self.best_uid = self.ai_model_service.priority_uids(self.ai_model_service.metagraph)
         
     def load_prompts(self):
         gs_dev = load_dataset("etechgrid/Prompts_for_Voice_cloning_and_TTS")
