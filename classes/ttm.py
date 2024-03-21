@@ -90,7 +90,7 @@ class MusicGenerationService(AIModelService):
             self.scores = torch.cat((self.scores, new_scores))
             del new_scores
 
-        if step:
+        if step % 5 == 0:
             async with self.lock:
                 # Use the API prompt if available; otherwise, load prompts from HuggingFace
                 if c_prompt:

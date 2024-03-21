@@ -83,7 +83,7 @@ class VoiceCloningService(AIModelService):
             bt.logging.error(f"An error occurred while fetching prompt: {e}")
             c_prompt = None
 
-        if step % 250 == 0:
+        if step % 300 == 0:
             async with self.lock:
                 if c_prompt:
                     bt.logging.info(f"--------------------------------- Prompt and voices are being used from Corcel API for Voice Clone at Step: {step} ---------------------------------")

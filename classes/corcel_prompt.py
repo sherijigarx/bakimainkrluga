@@ -10,7 +10,7 @@ def get_TTS():
     }
     data = {
         "messages": [{"role": "user", "content": "random meaningful text phrase in less than 32 words"}],
-        "miners_to_query": 1,
+        "miners_to_query": 3,
         "top_k_miners_to_query": 40,
         "ensure_responses": True,
         "model": "cortext-ultra",
@@ -39,7 +39,7 @@ def get_VC():
     }
     data = {
         "messages": [{"role": "user", "content": "random meaningful text phrase in less than 32 words"}],
-        "miners_to_query": 1,
+        "miners_to_query": 3,
         "top_k_miners_to_query": 40,
         "ensure_responses": True,
         "model": "cortext-ultra",
@@ -68,7 +68,7 @@ def get_TTM():
     }
     data = {
         "messages": [{"role": "user", "content": "random Music generation phrase for AI music generation model in less than 32 words"}],
-        "miners_to_query": 1,
+        "miners_to_query": 3,
         "top_k_miners_to_query": 40,
         "ensure_responses": True,
         "model": "cortext-ultra",
