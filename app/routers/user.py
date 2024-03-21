@@ -112,6 +112,13 @@ async def tts_service(request: TTSMrequest, user: User = Depends(get_current_act
     print("User details:", user_dict)
     print("Request details:", request)
 
+        # Check if prompt is already enclosed in quotes
+    if not request.prompt.startswith('"') or not request.prompt.endswith('"'):
+        prompt = f'"{request.prompt}"'  # Add quotes to the prompt if not already quoted
+
+    if prompt:
+        bt.logging.info(f"Prompt details: {prompt}")
+
     # Check if the user has a subscription
     if user.roles:
         role = user.roles[0]
@@ -136,12 +143,12 @@ async def tts_service(request: TTSMrequest, user: User = Depends(get_current_act
             bt.logging.info(f"Chosen axon: {axon}, UID: {uid}")
 
             # Use the prompt from the request in the query_network function
-            bt.logging.info(f"request prompt: {request.prompt}")
+            bt.logging.info(f"request prompt: {prompt}")
             bt.logging.info(f"request axon here: {axon}")
-            response = tts_api.query_network(axon, request.prompt)
+            response = tts_api.query_network(axon, prompt)
 
             # Process the response
-            audio_data = tts_api.process_response(axon, response, request.prompt)
+            audio_data = tts_api.process_response(axon, response, prompt)
             bt.logging.info(f"Audio data: {audio_data}")
 
             try:
