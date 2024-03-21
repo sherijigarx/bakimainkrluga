@@ -3,7 +3,7 @@ import torchaudio
 from fastapi import APIRouter, Depends, HTTPException, Form
 from ..user_database import get_user, verify_user_credentials, update_user_password, get_database
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 import numpy as np
 import logging
 from fastapi import Depends, UploadFile, File
@@ -111,10 +111,16 @@ async def tts_service(request: TTSMrequest, user: User = Depends(get_current_act
     user_dict = jsonable_encoder(user)
     print("User details:", user_dict)
 
-    # Check if the prompt is already enclosed in quotes
+    # Preprocess the prompt: add quotes if not already quoted
     if not request.prompt.startswith('"') or not request.prompt.endswith('"'):
-        request.prompt = f'"{request.prompt}"'  # Add quotes to the prompt if not already quoted
-        print("Request details:", request.prompt)
+        request.prompt = f'"{request.prompt}"'
+        print("Processed prompt:", request.prompt)
+
+    # Validate the request body after preprocessing
+    try:
+        request = TTSMrequest(prompt=request.prompt)  # Reassign to ensure validation with the updated prompt
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
     # Check if the user has a subscription
     if user.roles:
