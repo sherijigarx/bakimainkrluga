@@ -33,7 +33,7 @@ sys.path.insert(0, audio_subnet_path)
 class VoiceCloningService(AIModelService):
     # Existing __init__ and other methods...
     def __init__(self):
-        super().__init__()  # Initializes base class components
+        super(AIModelService.get_instance(), self).__init__()  # This is the new way, using the singleton instance
         self.load_vc_prompts()
         self.load_vc_voices()
         self.total_dendrites_per_query = self.vcdnp  # Example value, adjust as needed
