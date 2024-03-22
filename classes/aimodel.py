@@ -42,6 +42,7 @@ class AIModelService:
 
         # Now initialize everything needed for the AIModelService
         self.config = self.get_config()
+        self.sys_info = self.get_system_info()
         self.setup_paths()
         self.setup_logging()
         self.setup_wallet()
