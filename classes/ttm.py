@@ -30,9 +30,8 @@ sys.path.insert(0, audio_subnet_path)
 from classes.corcel_prompt import get_TTM
 
 
-class MusicGenerationService(AIModelService):
+class MusicGenerationService(AIModelService.get_instance()):
     def __init__(self):
-        super().__init__()  # This is the new way, using the singleton instance
         self.load_prompts()
         self.total_dendrites_per_query = 15
         self.minimum_dendrites_per_query = 3  # Example value, adjust as needed

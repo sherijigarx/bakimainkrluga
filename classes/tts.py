@@ -27,9 +27,8 @@ sys.path.insert(0, audio_subnet_path)
 from classes.corcel_prompt import get_TTS
 
 
-class TextToSpeechService(AIModelService):
+class TextToSpeechService(AIModelService.get_instance()):
     def __init__(self):
-        super().__init__()  # Initializes base class components
         self.load_prompts()
         self.total_dendrites_per_query = 15
         self.minimum_dendrites_per_query = 3  # Example value, adjust as needed
