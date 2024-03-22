@@ -158,7 +158,7 @@ class TextToSpeechService(AIModelService):
     def query_network(self,filtered_axons, prompt):
         # Network querying logic
         
-        responses = self.dendrite.query(
+        responses = self.ai_model_service.dendrite.query(
             filtered_axons,
             lib.protocol.TextToSpeech(text_input=prompt),
             deserialize=True,
