@@ -33,10 +33,28 @@ class AIModelService:
         self.sys_info = self.get_system_info()
         self.setup_paths()
         self.setup_logging()
-        self.setup_wallet()
-        self.setup_subtensor()
-        self.setup_dendrite()
-        self.setup_metagraph()
+
+    # def setup_wallet(self):
+        # Initialize the wallet with the provided configuration
+        self.wallet = bt.wallet(config=self.config)
+        bt.logging.info(f"Wallet: {self.wallet}")
+
+
+    # def setup_subtensor(self):
+    # Initialize the subtensor connection with the provided configuration
+        self.subtensor = bt.subtensor(config=self.config)
+        bt.logging.info(f"Subtensor: {self.subtensor}")
+
+    # def setup_dendrite(self):
+        # Initialize the dendrite (RPC client) with the wallet
+        self.dendrite = bt.dendrite(wallet=self.wallet)
+        bt.logging.info(f"Dendrite: {self.dendrite}")
+
+    # def setup_metagraph(self):
+        # Initialize the metagraph for the network state
+        self.metagraph = self.subtensor.metagraph(self.config.netuid)
+        bt.logging.info(f"Metagraph: {self.metagraph}")
+
         self.priority_uids(self.metagraph)
         self.p = inflect.engine()
         self.vcdnp = self.config.vcdnp
@@ -189,26 +207,26 @@ class AIModelService:
 
         bt.logging(self.config, logging_dir=self.config.full_path)
 
-    def setup_wallet(self):
-        # Initialize the wallet with the provided configuration
-        self.wallet = bt.wallet(config=self.config)
-        bt.logging.info(f"Wallet: {self.wallet}")
+    # def setup_wallet(self):
+    #     # Initialize the wallet with the provided configuration
+    #     self.wallet = bt.wallet(config=self.config)
+    #     bt.logging.info(f"Wallet: {self.wallet}")
 
 
-    def setup_subtensor(self):
-    # Initialize the subtensor connection with the provided configuration
-        self.subtensor = bt.subtensor(config=self.config)
-        bt.logging.info(f"Subtensor: {self.subtensor}")
+    # def setup_subtensor(self):
+    # # Initialize the subtensor connection with the provided configuration
+    #     self.subtensor = bt.subtensor(config=self.config)
+    #     bt.logging.info(f"Subtensor: {self.subtensor}")
 
-    def setup_dendrite(self):
-        # Initialize the dendrite (RPC client) with the wallet
-        self.dendrite = bt.dendrite(wallet=self.wallet)
-        bt.logging.info(f"Dendrite: {self.dendrite}")
+    # def setup_dendrite(self):
+    #     # Initialize the dendrite (RPC client) with the wallet
+    #     self.dendrite = bt.dendrite(wallet=self.wallet)
+    #     bt.logging.info(f"Dendrite: {self.dendrite}")
 
-    def setup_metagraph(self):
-        # Initialize the metagraph for the network state
-        self.metagraph = self.subtensor.metagraph(self.config.netuid)
-        bt.logging.info(f"Metagraph: {self.metagraph}")
+    # def setup_metagraph(self):
+    #     # Initialize the metagraph for the network state
+    #     self.metagraph = self.subtensor.metagraph(self.config.netuid)
+    #     bt.logging.info(f"Metagraph: {self.metagraph}")
 
     def update_score(self, axon, new_score, service, ax):
             try:
