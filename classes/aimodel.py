@@ -25,36 +25,43 @@ from huggingface_hub import hf_hub_download
 from lib import __spec_version__ as spec_version
 
 class AIModelService:
-    _instance = None  # Class attribute holding the singleton instance
+    _instance = None
     _scores = None
     version: int = spec_version
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super(AIModelService, cls).__new__(cls)
+            # Direct initialization in __init__, which will be called right after this
         return cls._instance
 
     def __init__(self):
-        # This check prevents re-initialization if the instance already exists
-        if not hasattr(self, 'initialized'):  # Use an attribute to check if __init__ has been called
-            self.config = self.get_config()
-            self.sys_info = self.get_system_info()
-            self.setup_paths()
-            self.setup_logging()
-            self.setup_wallet()
-            self.setup_subtensor()
-            self.setup_dendrite()
-            self.setup_metagraph()
-            self.priority_uids(self.metagraph)
-            self.p = inflect.engine()
-            self.vcdnp = self.config.vcdnp
-            self.max_mse = self.config.max_mse
-            self.pt_file = hf_hub_download(repo_id="lukewys/laion_clap", filename="630k-best.pt")
-            if AIModelService._scores is None:
-                AIModelService._scores = self.metagraph.E.clone().detach()
-            self.scores = AIModelService._scores
-            self.uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
-            self.initialized = True  # Set the flag indicating __init__ has completed
+        # Only run initialization if it hasn't been done already
+        if getattr(self, 'initialized', False):
+            return  # Initialization already done; skip
+
+        # Now initialize everything needed for the AIModelService
+        self.config = self.get_config()
+        self.setup_paths()
+        self.setup_logging()
+        self.setup_wallet()
+        self.setup_subtensor()
+        self.setup_dendrite()
+        self.setup_metagraph()
+
+        # Additional shared resources...
+        self.p = inflect.engine()
+        self.vcdnp = self.config.vcdnp
+        self.max_mse = self.config.max_mse
+        self.pt_file = hf_hub_download(repo_id="lukewys/laion_clap", filename="630k-best.pt")
+
+        if AIModelService._scores is None:
+            AIModelService._scores = self.metagraph.E.clone().detach()
+        self.scores = AIModelService._scores
+        self.uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
+        
+        # Mark as initialized
+        self.initialized = True
 
     @classmethod
     def get_instance(cls):
