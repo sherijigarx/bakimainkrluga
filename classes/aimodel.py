@@ -33,30 +33,13 @@ class AIModelService:
         self.config = self.get_config()
         self.sys_info = self.get_system_info()
         self.setup_paths()
-
-    # def setup_wallet(self):
-        # Initialize the wallet with the provided configuration
+        self.setup_logging()
         self.wallet = bt.wallet(config=self.config)
-        # bt.logging.info(f"Wallet: {self.wallet}")
-
-
-    # def setup_subtensor(self):
-    # Initialize the subtensor connection with the provided configuration
         self.subtensor = bt.subtensor(config=self.config)
-        # bt.logging.info(f"Subtensor: {self.subtensor}")
-
-    # def setup_dendrite(self):
-        # Initialize the dendrite (RPC client) with the wallet
         self.dendrite = bt.dendrite(wallet=self.wallet)
-        # bt.logging.info(f"Dendrite: {self.dendrite}")
-
-    # def setup_metagraph(self):
-        # Initialize the metagraph for the network state
         self.metagraph = self.subtensor.metagraph(self.config.netuid)
-        # bt.logging.info(f"Metagraph: {self.metagraph}")
 
         if not AIModelService._base_initialized:
-            self.setup_logging()
             # Perform actions that should only happen once
             bt.logging.info(f"Wallet: {self.wallet}")
             bt.logging.info(f"Subtensor: {self.subtensor}")
@@ -218,27 +201,6 @@ class AIModelService:
 
         bt.logging(self.config, logging_dir=self.config.full_path)
 
-    # def setup_wallet(self):
-    #     # Initialize the wallet with the provided configuration
-    #     self.wallet = bt.wallet(config=self.config)
-    #     bt.logging.info(f"Wallet: {self.wallet}")
-
-
-    # def setup_subtensor(self):
-    # # Initialize the subtensor connection with the provided configuration
-    #     self.subtensor = bt.subtensor(config=self.config)
-    #     bt.logging.info(f"Subtensor: {self.subtensor}")
-
-    # def setup_dendrite(self):
-    #     # Initialize the dendrite (RPC client) with the wallet
-    #     self.dendrite = bt.dendrite(wallet=self.wallet)
-    #     bt.logging.info(f"Dendrite: {self.dendrite}")
-
-    # def setup_metagraph(self):
-    #     # Initialize the metagraph for the network state
-    #     self.metagraph = self.subtensor.metagraph(self.config.netuid)
-    #     bt.logging.info(f"Metagraph: {self.metagraph}")
-
     def update_score(self, axon, new_score, service, ax):
             try:
                 uids = self.metagraph.uids.tolist()
@@ -254,7 +216,6 @@ class AIModelService:
                 bt.logging.info(f"Updated score for {service} Hotkey {axon.hotkey}: {self.scores[uid_index]}")
             except Exception as e:
                 print(f"An error occurred while updating the score: {e}")
-
 
     def punish(self, axon, service, punish_message):
         '''Punish the axon for returning an invalid response'''
