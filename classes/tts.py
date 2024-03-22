@@ -43,6 +43,11 @@ class TextToSpeechService(AIModelService):
         self.combinations = []
         self.lock = asyncio.Lock()
         self.best_uid = self.priority_uids(self.metagraph)
+        bt.logging.info(f"Wallet: {self.wallet}")
+        bt.logging.info(f"Subtensor: {self.subtensor}")
+        bt.logging.info(f"Dendrite: {self.dendrite}")
+        bt.logging.info(f"Metagraph: {self.metagraph}")
+
         
     def load_prompts(self):
         gs_dev = load_dataset("etechgrid/Prompts_for_Voice_cloning_and_TTS")

@@ -37,23 +37,23 @@ class AIModelService:
     # def setup_wallet(self):
         # Initialize the wallet with the provided configuration
         self.wallet = bt.wallet(config=self.config)
-        bt.logging.info(f"Wallet: {self.wallet}")
+        # bt.logging.info(f"Wallet: {self.wallet}")
 
 
     # def setup_subtensor(self):
     # Initialize the subtensor connection with the provided configuration
         self.subtensor = bt.subtensor(config=self.config)
-        bt.logging.info(f"Subtensor: {self.subtensor}")
+        # bt.logging.info(f"Subtensor: {self.subtensor}")
 
     # def setup_dendrite(self):
         # Initialize the dendrite (RPC client) with the wallet
         self.dendrite = bt.dendrite(wallet=self.wallet)
-        bt.logging.info(f"Dendrite: {self.dendrite}")
+        # bt.logging.info(f"Dendrite: {self.dendrite}")
 
     # def setup_metagraph(self):
         # Initialize the metagraph for the network state
         self.metagraph = self.subtensor.metagraph(self.config.netuid)
-        bt.logging.info(f"Metagraph: {self.metagraph}")
+        # bt.logging.info(f"Metagraph: {self.metagraph}")
 
         self.priority_uids(self.metagraph)
         self.p = inflect.engine()
