@@ -82,7 +82,7 @@ class VoiceCloningService(AIModelService):
         except Exception as e:
             bt.logging.error(f"An error occurred while fetching prompt: {e}")
             c_prompt = None
-
+        bt.logging.info(f"----------------------------The current step ------------------------------: {step}")
         if step % 100 == 0:
             async with self.lock:
                 if c_prompt:
