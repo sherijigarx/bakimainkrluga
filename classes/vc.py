@@ -30,17 +30,17 @@ sys.path.insert(0, project_root)
 sys.path.insert(0, audio_subnet_path)
 
 
-class VoiceCloningService(AIModelService.get_instance()):
+class VoiceCloningService(AIModelService):
     # Existing __init__ and other methods...
     def __init__(self):
-        super().__init__()  # This is the new way, using the singleton instance
+        self.aims = AIModelService.get_instance()
         self.load_vc_prompts()
         self.load_vc_voices()
-        self.total_dendrites_per_query = self.vcdnp  # Example value, adjust as needed
+        self.total_dendrites_per_query = self.aims.vcdnp  # Example value, adjust as needed
         self.minimum_dendrites_per_query = 5  # Example value, adjust as needed
         self.combinations = []
         self.lock = asyncio.Lock()
-        self.best_uid = self.priority_uids(self.metagraph)
+        self.best_uid = self.priority_uids(self.aims.metagraph)
         self.filtered_axon = []
         self.filtered_axons = []
         self.responses = None
@@ -87,16 +87,16 @@ class VoiceCloningService(AIModelService.get_instance()):
             async with self.lock:
                 if c_prompt:
                     bt.logging.info(f"--------------------------------- Prompt and voices are being used from Corcel API for Voice Clone at Step: {step} ---------------------------------")
-                    self.text_input = self.convert_numeric_values(c_prompt)  # Use the prompt from the API
+                    self.text_input = self.aims.convert_numeric_values(c_prompt)  # Use the prompt from the API
                 else:
                     # Fetch prompts from HuggingFace if API failed
                     bt.logging.info(f"--------------------------------- Prompt and voices are being used from HuggingFace Dataset for Voice Clone at Step: {step} ---------------------------------")
                     self.text_input = random.choice(self.prompts)
-                    self.text_input = self.convert_numeric_values(self.text_input)
+                    self.text_input = self.aims.convert_numeric_values(self.text_input)
                 while len(self.text_input) > 256:
                     bt.logging.error(f"The length of current Prompt is greater than 256. Skipping current prompt.")
                     self.text_input = random.choice(self.prompts)
-                    self.text_input = self.convert_numeric_values(self.text_input)
+                    self.text_input = self.aims.convert_numeric_values(self.text_input)
 
                 bt.logging.info(f"______________VC-Prompt______________: {self.text_input}")
                 vc_voice = random.choice(self.audio_files)
@@ -113,8 +113,8 @@ class VoiceCloningService(AIModelService.get_instance()):
     async def main_loop_logic(self, step):
         # Sync and update weights logic
         if step % 10 == 0:
-            self.metagraph.sync(subtensor=self.subtensor)
-            self.best_uid = self.priority_uids(self.metagraph)
+            self.aims.metagraph.sync(subtensor=self.aims.subtensor)
+            self.best_uid = self.priority_uids(self.aims.metagraph)
 
         tasks = []
         try:
@@ -139,7 +139,7 @@ class VoiceCloningService(AIModelService.get_instance()):
         try:
             filtered_axons = api_axon if api_axon else self.get_filtered_axons_from_combinations() 
             # for ax in self.filtered_axons:
-            self.responses = self.dendrite.query(
+            self.responses = self.aims.dendrite.query(
                 filtered_axons,
                 lib.protocol.VoiceClone(text_input=text_input, clone_input=clone_input, sample_rate=sample_rate, hf_voice_id="name"), 
                 deserialize=True,
@@ -147,7 +147,7 @@ class VoiceCloningService(AIModelService.get_instance()):
             )
             # Process the responses if needed
             processed_vc_file = self.process_voice_clone_responses(filtered_axons, text_input, input_file)
-            bt.logging.info(f"Updated Scores for Voice Cloning: {self.scores}")
+            bt.logging.info(f"Updated Scores for Voice Cloning: {self.aims.scores}")
             return processed_vc_file
         except Exception as e:
             print(f"An error occurred while processing the voice clone: {e}")
@@ -189,7 +189,7 @@ class VoiceCloningService(AIModelService.get_instance()):
                     score = self.score_output(input_file, cloned_file_path, prompt) # self.audio_file_path
                     bt.logging.info(f"The cloned file for API have been saved successfully: {cloned_file_path}")
                     try:
-                        uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
+                        uid_in_metagraph = self.aims.metagraph.hotkeys.index(axon.hotkey)
                         wandb.log({f"Voice Clone Prompt: {prompt}": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
                         bt.logging.success(f"Voice Clone Audio file uploaded to wandb successfully for Hotkey {axon.hotkey} and uid {uid_in_metagraph}")
                     except Exception as e:
@@ -201,7 +201,7 @@ class VoiceCloningService(AIModelService.get_instance()):
                     score = self.score_output(self.audio_file_path, cloned_file_path, prompt)
                     bt.logging.info(f"The cloned file have been saved successfully: {cloned_file_path}")
                     try:
-                        uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
+                        uid_in_metagraph = self.aims.metagraph.hotkeys.index(axon.hotkey)
                         wandb.log({f"Voice Clone Prompt: {response.text_input}": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
                         bt.logging.success(f"Voice Clone Audio file uploaded to wandb successfully for Hotkey {axon.hotkey} and uid {uid_in_metagraph}")
                     except Exception as e:
@@ -231,24 +231,24 @@ class VoiceCloningService(AIModelService.get_instance()):
         if self.combinations:
             current_combination = self.combinations.pop(0)
             bt.logging.info(f"Current Combination for VC: {current_combination}")
-            filtered_axons = [self.metagraph.axons[i] for i in current_combination]
+            filtered_axons = [self.aims.metagraph.axons[i] for i in current_combination]
         else:
             self.get_filtered_axons()
             current_combination = self.combinations.pop(0)
             bt.logging.info(f"Current Combination for VC: {current_combination}")
-            filtered_axons = [self.metagraph.axons[i] for i in current_combination]
+            filtered_axons = [self.aims.metagraph.axons[i] for i in current_combination]
 
         return filtered_axons
 
     def get_filtered_axons(self):
         # Get the uids of all miners in the network.
-        uids = self.metagraph.uids.tolist()
-        queryable_uids = (self.metagraph.total_stake >= 0)
+        uids = self.aims.metagraph.uids.tolist()
+        queryable_uids = (self.aims.metagraph.total_stake >= 0)
         # Remove the weights of miners that are not queryable.
-        queryable_uids = queryable_uids * torch.Tensor([self.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in uids])
+        queryable_uids = queryable_uids * torch.Tensor([self.aims.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in uids])
         queryable_uid = queryable_uids * torch.Tensor([
-            any(self.metagraph.neurons[uid].axon_info.ip == ip for ip in lib.BLACKLISTED_IPS) or
-            any(self.metagraph.neurons[uid].axon_info.ip.startswith(prefix) for prefix in lib.BLACKLISTED_IPS_SEG)
+            any(self.aims.metagraph.neurons[uid].axon_info.ip == ip for ip in lib.BLACKLISTED_IPS) or
+            any(self.aims.metagraph.neurons[uid].axon_info.ip.startswith(prefix) for prefix in lib.BLACKLISTED_IPS_SEG)
             for uid in uids
         ])
         active_miners = torch.sum(queryable_uids)
