@@ -6,18 +6,26 @@ from lib.reward import score
 import math
 
 class CloneScore:
-    def __init__(self, n_mels=128):
+    def __init__(self, n_mels=64):  # Reduced number of Mel frequency bins
         self.n_mels = n_mels
 
-    def extract_mel_spectrogram(self, file_path):
+    def load_and_normalize_waveform(self, file_path):
         waveform, sample_rate = torchaudio.load(file_path)
+        # Normalize waveform amplitude
+        waveform = waveform / torch.max(torch.abs(waveform))
+        return waveform, sample_rate
+
+    def extract_mel_spectrogram(self, file_path):
+        waveform, sample_rate = self.load_and_normalize_waveform(file_path)
+        # Assuming you have a function to trim silence - replace with actual function
+        waveform = self.trim_silence(waveform)  # Implement this method based on your needs
         mel_spectrogram_transform = T.MelSpectrogram(sample_rate=sample_rate, n_mels=self.n_mels)
         mel_spectrogram = mel_spectrogram_transform(waveform)
-        # Convert power spectrogram (amplitude squared) to decibel (dB) units
         db_transform = T.AmplitudeToDB()
         mel_spectrogram_db = db_transform(mel_spectrogram)
         return mel_spectrogram_db
-
+    
+    
     def pad_or_trim_to_same_length(self, spec1, spec2):
         if spec1.size(2) > spec2.size(2):
             padding_size = spec1.size(2) - spec2.size(2)
