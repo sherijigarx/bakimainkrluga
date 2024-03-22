@@ -167,7 +167,7 @@ class TextToSpeechService(AIModelService):
         return responses
     
     def update_block(self):
-        self.current_block = self.subtensor.block
+        self.current_block = self.ai_model_service.subtensor.block
         if self.current_block - self.last_updated_block > 50:
             bt.logging.info(f"Updating weights. Last update was at block {self.last_updated_block}")
             bt.logging.info(f"Current block is {self.current_block}")
