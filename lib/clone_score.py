@@ -4,28 +4,36 @@ import torchaudio.transforms as T
 import bittensor as bt
 from lib.reward import score
 import math
+import numpy as np
+from scipy.spatial.distance import cosine
+from fastdtw import fastdtw
+from torchaudio.transforms import Vad
 
 class CloneScore:
-    def __init__(self, n_mels=64):  # Reduced number of Mel frequency bins
+    def __init__(self, n_mels=128):
         self.n_mels = n_mels
+        self.vad = Vad(sample_rate=16000)  # Voice Activity Detection for trimming silence
 
-    def load_and_normalize_waveform(self, file_path):
-        waveform, sample_rate = torchaudio.load(file_path)
-        # Normalize waveform amplitude
-        waveform = waveform / torch.max(torch.abs(waveform))
-        return waveform, sample_rate
+    def trim_silence(self, waveform, sample_rate):
+        # Assuming the audio is mono for simplicity; adjust or expand as needed for your use case
+        if waveform.shape[0] > 1:
+            waveform = torch.mean(waveform, dim=0, keepdim=True)
+        trimmed_waveform = self.vad(waveform)
+        return trimmed_waveform
 
     def extract_mel_spectrogram(self, file_path):
-        waveform, sample_rate = self.load_and_normalize_waveform(file_path)
-        # Assuming you have a function to trim silence - replace with actual function
-        waveform = self.trim_silence(waveform)  # Implement this method based on your needs
+        waveform, sample_rate = torchaudio.load(file_path)
+        # Trim silence from the waveform
+        waveform = self.trim_silence(waveform, sample_rate)
         mel_spectrogram_transform = T.MelSpectrogram(sample_rate=sample_rate, n_mels=self.n_mels)
         mel_spectrogram = mel_spectrogram_transform(waveform)
+        # Convert power spectrogram to dB units and normalize
         db_transform = T.AmplitudeToDB()
         mel_spectrogram_db = db_transform(mel_spectrogram)
-        return mel_spectrogram_db
+        norm_spectrogram = (mel_spectrogram_db - mel_spectrogram_db.mean()) / mel_spectrogram_db.std()
+        return norm_spectrogram
     
-    
+
     def pad_or_trim_to_same_length(self, spec1, spec2):
         if spec1.size(2) > spec2.size(2):
             padding_size = spec1.size(2) - spec2.size(2)
