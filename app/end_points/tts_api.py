@@ -8,7 +8,7 @@ import lib
 
 class TTS_API(TextToSpeechService):
     def __init__(self):
-        # super().__init__()
+        super().__init__()
         self.current_index = 0  # Initialize the current index
         self.filtered_axons = self._generate_filtered_axons_list()  # Generate the initial list
 

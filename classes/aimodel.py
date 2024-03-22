@@ -26,6 +26,7 @@ from lib import __spec_version__ as spec_version
 
 class AIModelService:
     _scores = None
+    _base_initialized = False  # New class-level flag
     version: int = spec_version
 
     def __init__(self):
@@ -54,6 +55,16 @@ class AIModelService:
         # Initialize the metagraph for the network state
         self.metagraph = self.subtensor.metagraph(self.config.netuid)
         # bt.logging.info(f"Metagraph: {self.metagraph}")
+
+        if not AIModelService._base_initialized:
+            # Perform actions that should only happen once
+            bt.logging.info(f"Wallet: {self.wallet}")
+            bt.logging.info(f"Subtensor: {self.subtensor}")
+            bt.logging.info(f"Dendrite: {self.dendrite}")
+            bt.logging.info(f"Metagraph: {self.metagraph}")
+
+            # Now mark these as initialized so they don't run again
+            AIModelService._base_initialized = True
 
         self.priority_uids(self.metagraph)
         self.p = inflect.engine()
