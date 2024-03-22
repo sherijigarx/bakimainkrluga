@@ -67,21 +67,21 @@ class TextToSpeechService(AIModelService):
     def new_wandb_run(self):
         now = dt.datetime.now()
         run_id = now.strftime("%Y-%m-%d_%H-%M-%S")
-        name = f"Validator-{self.uid}-{run_id}"
-        commit = self.get_git_commit_hash()
+        name = f"Validator-{self.ai_model_service.uid}-{run_id}"
+        commit = self.ai_model_service.get_git_commit_hash()
         self.wandb_run = wandb.init(
             name=name,
             project="AudioSubnet_Valid",
             entity="subnet16team",
             config={
-                "uid": self.uid,
-                "hotkey": self.wallet.hotkey.ss58_address,
+                "uid": self.ai_model_service.uid,
+                "hotkey": self.ai_model_service.wallet.hotkey.ss58_address,
                 "run_name": run_id,
                 "type": "Validator",
                 "tao (stake)": self.tao,
                 "commit": commit,
             },
-            tags=self.sys_info,
+            tags=self.ai_model_service.sys_info,
             allow_val_change=True,
             anonymous="allow",
         )
@@ -114,16 +114,16 @@ class TextToSpeechService(AIModelService):
             c_prompt = None
         # Sync and update weights logic
         if step % 10 == 0:
-            self.metagraph.sync(subtensor=self.subtensor)
+            self.ai_model_service.metagraph.sync(subtensor=self.ai_model_service.subtensor)
             bt.logging.info(f"🔄 Syncing metagraph with subtensor.")
         
-        uids = self.metagraph.uids.tolist()
+        uids = self.ai_model_service.metagraph.uids.tolist()
         # If there are more uids than scores, add more weights.
-        if len(uids) > len(self.scores):
+        if len(uids) > len(self.ai_model_service.scores):
             bt.logging.trace("Adding more weights")
-            size_difference = len(uids) - len(self.scores)
+            size_difference = len(uids) - len(self.ai_model_service.scores)
             new_scores = torch.zeros(size_difference, dtype=torch.float32)
-            self.scores = torch.cat((self.scores, new_scores))
+            self.ai_model_service.scores = torch.cat((self.ai_model_service.scores, new_scores))
             del new_scores
 
         if step % 5 == 0:
@@ -131,18 +131,18 @@ class TextToSpeechService(AIModelService):
                 # Use the API prompt if available; otherwise, load prompts from HuggingFace
                 if c_prompt:
                     bt.logging.info(f"--------------------------------- Prompt are being used from Corcel API for Text-To-Speech at Step: {step} --------------------------------- ")
-                    g_prompt = self.convert_numeric_values(c_prompt)  # Use the prompt from the API
+                    g_prompt = self.ai_model_service.convert_numeric_values(c_prompt)  # Use the prompt from the API
                 else:
                     # Fetch prompts from HuggingFace if API failed
                     bt.logging.info(f"--------------------------------- Prompt are being used from HuggingFace Dataset for Text-To-Speech at Step: {step} --------------------------------- ")
                     g_prompts = self.load_prompts()
                     g_prompt = random.choice(g_prompts)  # Choose a random prompt from HuggingFace
-                    g_prompt = self.convert_numeric_values(g_prompt)
+                    g_prompt = self.ai_model_service.convert_numeric_values(g_prompt)
 
                 while len(g_prompt) > 256:
                     bt.logging.error(f'The length of current Prompt is greater than 256. Skipping current prompt.')
                     g_prompt = random.choice(g_prompts)
-                    g_prompt = self.convert_numeric_values(g_prompt)
+                    g_prompt = self.ai_model_service.convert_numeric_values(g_prompt)
 
                 filtered_axons = self.get_filtered_axons_from_combinations()
                 bt.logging.info(f"______________TTS-Prompt______________: {g_prompt}")
@@ -153,7 +153,7 @@ class TextToSpeechService(AIModelService):
                     bt.logging.trace(f"Clearing weights for validators and nodes without IPs")
                     self.last_reset_weights_block = self.current_block        
                     # set all nodes without ips set to 0
-                    self.scores = self.scores * torch.Tensor([self.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in self.metagraph.uids])
+                    self.ai_model_service.scores = self.ai_model_service.scores * torch.Tensor([self.ai_model_service.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in self.ai_model_service.metagraph.uids])
                     
     def query_network(self,filtered_axons, prompt):
         # Network querying logic
@@ -171,7 +171,7 @@ class TextToSpeechService(AIModelService):
         if self.current_block - self.last_updated_block > 50:
             bt.logging.info(f"Updating weights. Last update was at block {self.last_updated_block}")
             bt.logging.info(f"Current block is {self.current_block}")
-            self.update_weights(self.scores)
+            self.update_weights(self.ai_model_service.scores)
             self.last_updated_block = self.current_block
         else:
             bt.logging.info(f"Updating weights. Last update was at block:  {self.last_updated_block}")
@@ -184,7 +184,7 @@ class TextToSpeechService(AIModelService):
             if response is not None and isinstance(response, lib.protocol.TextToSpeech):
                 self.process_response(axon, response, prompt)
         
-        bt.logging.info(f"Scores after update in TTS: {self.scores}")
+        bt.logging.info(f"Scores after update in TTS: {self.ai_model_service.scores}")
         self.update_block()
 
 
@@ -236,7 +236,7 @@ class TextToSpeechService(AIModelService):
             torchaudio.save(output_path, src=audio_data_int, sample_rate=sampling_rate)
             print(f"Saved audio file to {output_path}")
             try:
-                uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
+                uid_in_metagraph = self.ai_model_service.metagraph.hotkeys.index(axon.hotkey)
                 wandb.log({f"Text to Speech prompt:{prompt} ": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
                 bt.logging.success(f"TTS Audio file uploaded to wandb successfully for Hotkey {axon.hotkey}")
             except Exception as e:
@@ -277,24 +277,24 @@ class TextToSpeechService(AIModelService):
         if self.combinations:
             current_combination = self.combinations.pop(0)
             bt.logging.info(f"Current Combination for TTS: {current_combination}")
-            filtered_axons = [self.metagraph.axons[i] for i in current_combination]
+            filtered_axons = [self.ai_model_service.metagraph.axons[i] for i in current_combination]
         else:
             self.get_filtered_axons()
             current_combination = self.combinations.pop(0)
             bt.logging.info(f"Current Combination for TTS: {current_combination}")
-            filtered_axons = [self.metagraph.axons[i] for i in current_combination]
+            filtered_axons = [self.ai_model_service.metagraph.axons[i] for i in current_combination]
 
         return filtered_axons
     
     def get_filtered_axons(self):
         # Get the uids of all miners in the network.
-        uids = self.metagraph.uids.tolist()
-        queryable_uids = (self.metagraph.total_stake >= 0)
+        uids = self.ai_model_service.metagraph.uids.tolist()
+        queryable_uids = (self.ai_model_service.metagraph.total_stake >= 0)
         # Remove the weights of miners that are not queryable.
-        queryable_uids = queryable_uids * torch.Tensor([self.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in uids])
+        queryable_uids = queryable_uids * torch.Tensor([self.ai_model_service.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in uids])
         queryable_uid = queryable_uids * torch.Tensor([
-            any(self.metagraph.neurons[uid].axon_info.ip == ip for ip in lib.BLACKLISTED_IPS) or
-            any(self.metagraph.neurons[uid].axon_info.ip.startswith(prefix) for prefix in lib.BLACKLISTED_IPS_SEG)
+            any(self.ai_model_service.metagraph.neurons[uid].axon_info.ip == ip for ip in lib.BLACKLISTED_IPS) or
+            any(self.ai_model_service.metagraph.neurons[uid].axon_info.ip.startswith(prefix) for prefix in lib.BLACKLISTED_IPS_SEG)
             for uid in uids
         ])
         active_miners = torch.sum(queryable_uids)
@@ -332,8 +332,8 @@ class TextToSpeechService(AIModelService):
     
     def update_weights(self, scores):
         # Process scores for blacklisted miners
-        for idx, uid in enumerate(self.metagraph.uids):
-            neuron = self.metagraph.neurons[uid]
+        for idx, uid in enumerate(self.ai_model_service.metagraph.uids):
+            neuron = self.ai_model_service.metagraph.neurons[uid]
             if neuron.coldkey in lib.BLACKLISTED_MINER_COLDKEYS or neuron.hotkey in lib.BLACKLISTED_MINER_HOTKEYS:
                 scores[idx] = 0.0
                 bt.logging.info(f"Blacklisted miner detected: {uid}. Score set to 0.")
@@ -345,10 +345,10 @@ class TextToSpeechService(AIModelService):
         # Process weights for the subnet
         try:
             processed_uids, processed_weights = bt.utils.weight_utils.process_weights_for_netuid(
-                uids=self.metagraph.uids,
+                uids=self.ai_model_service.metagraph.uids,
                 weights=weights,
                 netuid=self.config.netuid,
-                subtensor=self.subtensor
+                subtensor=self.ai_model_service.subtensor
             )
             bt.logging.info(f"Processed weights: {processed_weights}")
             bt.logging.info(f"Processed uids: {processed_uids}")
@@ -359,16 +359,16 @@ class TextToSpeechService(AIModelService):
             # Set weights on the Bittensor network
             result = self.subtensor.set_weights(
                 netuid=self.config.netuid,  # Subnet to set weights on
-                wallet=self.wallet,         # Wallet to sign set weights using hotkey
+                wallet=self.ai_model_service.wallet,         # Wallet to sign set weights using hotkey
                 uids=processed_uids,        # Uids of the miners to set weights for
                 weights=processed_weights, # Weights to set for the miners
                 wait_for_finalization=True,
-                version_key=self.version,
+                version_key=self.ai_model_service.version,
             )
 
             if result:
                 bt.logging.success(f'Successfully set weights. result: {result}')
-                bt.logging.info(f'META GRPAH: {self.metagraph.E.numpy()}')
+                bt.logging.info(f'META GRPAH: {self.ai_model_service.metagraph.E.numpy()}')
             else:
                 bt.logging.error('Failed to set weights.')
         except Exception as e:
