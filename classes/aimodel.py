@@ -24,6 +24,18 @@ import subprocess
 from huggingface_hub import hf_hub_download
 from lib import __spec_version__ as spec_version
 
+class InitializationRegistry:
+    initialized_components = set()
+
+    @classmethod
+    def is_initialized(cls, component_name):
+        return component_name in cls.initialized_components
+
+    @classmethod
+    def mark_initialized(cls, component_name):
+        cls.initialized_components.add(component_name)
+
+
 class AIModelService:
     _instance = None
     _scores = None
@@ -32,43 +44,71 @@ class AIModelService:
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super(AIModelService, cls).__new__(cls)
-            # Direct initialization in __init__, which will be called right after this
         return cls._instance
 
     def __init__(self):
         # Only run initialization if it hasn't been done already
         if getattr(self, 'initialized', False):
             return  # Initialization already done; skip
-
+        
         # Now initialize everything needed for the AIModelService
-        self.config = self.get_config()
-        self.sys_info = self.get_system_info()
-        self.setup_paths()
-        self.setup_logging()
-        self.setup_wallet()
-        self.setup_subtensor()
-        self.setup_dendrite()
-        self.setup_metagraph()
+        self.config = self.get_config()  # Assuming get_config is always needed and unique per instance
+
+        if not InitializationRegistry.is_initialized('paths'):
+            self.setup_paths()
+            InitializationRegistry.mark_initialized('paths')
+
+        if not InitializationRegistry.is_initialized('logging'):
+            self.setup_logging()
+            InitializationRegistry.mark_initialized('logging')
+
+        if not InitializationRegistry.is_initialized('wallet'):
+            self.setup_wallet()
+            InitializationRegistry.mark_initialized('wallet')
+
+        if not InitializationRegistry.is_initialized('subtensor'):
+            self.setup_subtensor()
+            InitializationRegistry.mark_initialized('subtensor')
+
+        if not InitializationRegistry.is_initialized('dendrite'):
+            self.setup_dendrite()
+            InitializationRegistry.mark_initialized('dendrite')
+
+        if not InitializationRegistry.is_initialized('metagraph'):
+            self.setup_metagraph()
+            InitializationRegistry.mark_initialized('metagraph')
 
         # Additional shared resources...
+        self.initialize_additional_resources()
+
+        # Mark as initialized to prevent re-initialization
+        self.initialized = True
+
+    def initialize_additional_resources(self):
+        # This method encapsulates initialization of resources that aren't part of the core setup,
+        # but still need to be globally controlled. Modify as necessary for your application.
+        self.sys_info = self.get_system_info()
         self.p = inflect.engine()
         self.vcdnp = self.config.vcdnp
         self.max_mse = self.config.max_mse
-        self.pt_file = hf_hub_download(repo_id="lukewys/laion_clap", filename="630k-best.pt")
-
-        if AIModelService._scores is None:
-            AIModelService._scores = self.metagraph.E.clone().detach()
-        self.scores = AIModelService._scores
-        self.uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
+        if not InitializationRegistry.is_initialized('pt_file'):
+            self.pt_file = hf_hub_download(repo_id="lukewys/laion_clap", filename="630k-best.pt")
+            InitializationRegistry.mark_initialized('pt_file')
         
-        # Mark as initialized
-        self.initialized = True
+        if not InitializationRegistry.is_initialized('scores'):
+            if AIModelService._scores is None:
+                AIModelService._scores = self.metagraph.E.clone().detach()
+            self.scores = AIModelService._scores
+            InitializationRegistry.mark_initialized('scores')
+
+        self.uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
 
     @classmethod
     def get_instance(cls):
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
+
 
     def get_config(self):
         parser = argparse.ArgumentParser()
