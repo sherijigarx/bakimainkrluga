@@ -33,7 +33,6 @@ class AIModelService:
         self.config = self.get_config()
         self.sys_info = self.get_system_info()
         self.setup_paths()
-        self.setup_logging()
 
     # def setup_wallet(self):
         # Initialize the wallet with the provided configuration
@@ -57,6 +56,7 @@ class AIModelService:
         # bt.logging.info(f"Metagraph: {self.metagraph}")
 
         if not AIModelService._base_initialized:
+            self.setup_logging()
             # Perform actions that should only happen once
             bt.logging.info(f"Wallet: {self.wallet}")
             bt.logging.info(f"Subtensor: {self.subtensor}")
