@@ -30,22 +30,20 @@ sys.path.insert(0, audio_subnet_path)
 from classes.corcel_prompt import get_TTM
 
 
-class MusicGenerationService(AIModelService.get_instance()):
+class MusicGenerationService(AIModelService):
     def __init__(self):
-        super().__init__()  # This is the new way, using the singleton instance
+        self.aims = AIModelService.get_instance() # This is the new way, using the singleton instance
         self.load_prompts()
         self.total_dendrites_per_query = 15
         self.minimum_dendrites_per_query = 3  # Example value, adjust as needed
-        self.current_block = self.subtensor.block
+        self.current_block = self.aims.subtensor.block
         self.last_updated_block = self.current_block - (self.current_block % 100)
         self.last_reset_weights_block = self.current_block
-        self.islocaltts = False
-        self.p_index = 0
         self.filtered_axon = []
         self.combinations = []
         self.duration = 755  #755 tokens = 15 seconds music
         self.lock = asyncio.Lock()
-        self.best_uid = self.priority_uids(self.metagraph)
+        self.best_uid = self.priority_uids(self.aims.metagraph)
         
 
     def load_prompts(self):
@@ -78,16 +76,16 @@ class MusicGenerationService(AIModelService.get_instance()):
             c_prompt = None
         # Sync and update weights logic
         if step % 10 == 0:
-            self.metagraph.sync(subtensor=self.subtensor)
-            self.best_uid = self.priority_uids(self.metagraph)
+            self.aims.metagraph.sync(subtensor=self.aims.subtensor)
+            self.best_uid = self.priority_uids(self.aims.metagraph)
 
-        uids = self.metagraph.uids.tolist()
+        uids = self.aims.metagraph.uids.tolist()
         # If there are more uids than scores, add more weights.
-        if len(uids) > len(self.scores):
+        if len(uids) > len(self.aims.scores):
             bt.logging.trace("Adding more weights")
-            size_difference = len(uids) - len(self.scores)
+            size_difference = len(uids) - len(self.aims.scores)
             new_scores = torch.zeros(size_difference, dtype=torch.float32)
-            self.scores = torch.cat((self.scores, new_scores))
+            self.aims.scores = torch.cat((self.aims.scores, new_scores))
             del new_scores
 
         if step % 5 == 0:
@@ -95,18 +93,18 @@ class MusicGenerationService(AIModelService.get_instance()):
                 # Use the API prompt if available; otherwise, load prompts from HuggingFace
                 if c_prompt:
                     bt.logging.info(f"--------------------------------- Prompt are being used from Corcel API for Text-To-Music at Step: {step} --------------------------------- ")
-                    g_prompt = self.convert_numeric_values(c_prompt)  # Use the prompt from the API
+                    g_prompt = self.aims.convert_numeric_values(c_prompt)  # Use the prompt from the API
                 else:
                     # Fetch prompts from HuggingFace if API failed
                     bt.logging.info(f"--------------------------------- Prompt are being used from HuggingFace Dataset for Text-To-Music at Step: {step} --------------------------------- ")
                     g_prompts = self.load_prompts()
                     g_prompt = random.choice(g_prompts)  # Choose a random prompt from HuggingFace
-                    g_prompt = self.convert_numeric_values(g_prompt)
+                    g_prompt = self.aims.convert_numeric_values(g_prompt)
 
                 while len(g_prompt) > 256:
                     bt.logging.error(f'The length of current Prompt is greater than 256. Skipping current prompt.')
                     g_prompt = random.choice(g_prompts)
-                    g_prompt = self.convert_numeric_values(g_prompt)
+                    g_prompt = self.aims.convert_numeric_values(g_prompt)
 
                 filtered_axons = self.get_filtered_axons_from_combinations()
                 bt.logging.info(f"______________TTM-Prompt______________: {g_prompt}")
@@ -117,12 +115,12 @@ class MusicGenerationService(AIModelService.get_instance()):
                     bt.logging.info(f"Clearing weights for validators and nodes without IPs")
                     self.last_reset_weights_block = self.current_block        
                     # set all nodes without ips set to 0
-                    self.scores = self.scores * torch.Tensor([self.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in self.metagraph.uids])
+                    self.aims.scores = self.aims.scores * torch.Tensor([self.aims.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in self.aims.metagraph.uids])
     
     def query_network(self,filtered_axons, prompt):
         # Network querying logic
         
-        responses = self.dendrite.query(
+        responses = self.aims.dendrite.query(
             filtered_axons,
             lib.protocol.MusicGeneration(text_input=prompt, duration=self.duration ),
             deserialize=True,
@@ -135,7 +133,7 @@ class MusicGenerationService(AIModelService.get_instance()):
             if response is not None and isinstance(response, lib.protocol.MusicGeneration):
                 self.process_response(axon, response, prompt)
         
-        bt.logging.info(f"Scores after update in TTM: {self.scores}")
+        bt.logging.info(f"Scores after update in TTM: {self.aims.scores}")
 
 
     def process_response(self, axon, response, prompt):
@@ -197,7 +195,7 @@ class MusicGenerationService(AIModelService.get_instance()):
             bt.logging.info(f"Saved audio file to {output_path}")
 
             try:
-                uid_in_metagraph = self.metagraph.hotkeys.index(axon.hotkey)
+                uid_in_metagraph = self.aims.metagraph.hotkeys.index(axon.hotkey)
                 wandb.log({f"TTM prompt: {prompt}": wandb.Audio(np.array(audio_data_int_), caption=f'For HotKey: {axon.hotkey[:10]} and uid {uid_in_metagraph}', sample_rate=sampling_rate)})
                 bt.logging.success(f"TTM Audio file uploaded to wandb successfully for Hotkey {axon.hotkey} and UID {uid_in_metagraph}")
             except Exception as e:
@@ -253,12 +251,12 @@ class MusicGenerationService(AIModelService.get_instance()):
         if self.combinations:
             current_combination = self.combinations.pop(0)
             bt.logging.info(f"Current Combination for TTM: {current_combination}")
-            filtered_axons = [self.metagraph.axons[i] for i in current_combination]
+            filtered_axons = [self.aims.metagraph.axons[i] for i in current_combination]
         else:
             self.get_filtered_axons()
             current_combination = self.combinations.pop(0)
             bt.logging.info(f"Current Combination for TTM: {current_combination}")
-            filtered_axons = [self.metagraph.axons[i] for i in current_combination]
+            filtered_axons = [self.aims.metagraph.axons[i] for i in current_combination]
 
         return filtered_axons
 
@@ -266,13 +264,13 @@ class MusicGenerationService(AIModelService.get_instance()):
 
     def get_filtered_axons(self):
         # Get the uids of all miners in the network.
-        uids = self.metagraph.uids.tolist()
-        queryable_uids = (self.metagraph.total_stake >= 0)
+        uids = self.aims.metagraph.uids.tolist()
+        queryable_uids = (self.aims.metagraph.total_stake >= 0)
         # Remove the weights of miners that are not queryable.
-        queryable_uids = queryable_uids * torch.Tensor([self.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in uids])
+        queryable_uids = queryable_uids * torch.Tensor([self.aims.metagraph.neurons[uid].axon_info.ip != '0.0.0.0' for uid in uids])
         queryable_uid = queryable_uids * torch.Tensor([
-            any(self.metagraph.neurons[uid].axon_info.ip == ip for ip in lib.BLACKLISTED_IPS) or
-            any(self.metagraph.neurons[uid].axon_info.ip.startswith(prefix) for prefix in lib.BLACKLISTED_IPS_SEG)
+            any(self.aims.metagraph.neurons[uid].axon_info.ip == ip for ip in lib.BLACKLISTED_IPS) or
+            any(self.aims.metagraph.neurons[uid].axon_info.ip.startswith(prefix) for prefix in lib.BLACKLISTED_IPS_SEG)
             for uid in uids
         ])
         active_miners = torch.sum(queryable_uids)
