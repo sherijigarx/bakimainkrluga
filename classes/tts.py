@@ -115,14 +115,6 @@ class TextToSpeechService(AIModelService):
             bt.logging.info(f"🔄 Syncing metagraph with subtensor.")
         
         uids = self.metagraph.uids.tolist()
-        # If there are more uids than scores, add more weights.
-        if len(uids) > len(self.scores):
-            bt.logging.trace("Adding more weights")
-            size_difference = len(uids) - len(self.scores)
-            new_scores = torch.zeros(size_difference, dtype=torch.float32)
-            self.scores = torch.cat((self.scores, new_scores))
-            del new_scores
-
         if step % 5 == 0:
             async with self.lock:
                 # Use the API prompt if available; otherwise, load prompts from HuggingFace
@@ -146,7 +138,7 @@ class TextToSpeechService(AIModelService):
                 responses = self.query_network(filtered_axons, g_prompt)
                 self.process_responses(filtered_axons, responses, g_prompt)
 
-                if self.last_reset_weights_block + 1800 < self.current_block:
+                if self.last_reset_weights_block + 50 < self.current_block:  #shaukat
                     bt.logging.trace(f"Clearing weights for validators and nodes without IPs")
                     self.last_reset_weights_block = self.current_block        
                     # set all nodes without ips set to 0
