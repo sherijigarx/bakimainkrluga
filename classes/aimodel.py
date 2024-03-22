@@ -25,30 +25,19 @@ from huggingface_hub import hf_hub_download
 from lib import __spec_version__ as spec_version
 
 class AIModelService:
-    _instance = None
     _scores = None
     version: int = spec_version
 
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super(AIModelService, cls).__new__(cls)
-            # Initialize only if instance is newly created
-            cls._instance.initialize_resources()
-        return cls._instance
-
-    def initialize_resources(self):
-        # Guard against reinitialization
-        if getattr(self, 'initialized', False):
-            return  # Skip if already initialized
-
-        # Initialization logic
+    def __init__(self):
         self.config = self.get_config()
+        self.sys_info = self.get_system_info()
         self.setup_paths()
         self.setup_logging()
         self.setup_wallet()
         self.setup_subtensor()
         self.setup_dendrite()
         self.setup_metagraph()
+        self.priority_uids(self.metagraph)
         self.p = inflect.engine()
         self.vcdnp = self.config.vcdnp
         self.max_mse = self.config.max_mse
@@ -58,17 +47,6 @@ class AIModelService:
         self.scores = AIModelService._scores
         self.uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
 
-        # Finally, mark this instance as fully initialized
-        self.initialized = True
-
-    @classmethod
-    def get_instance(cls):
-        # Ensures instance is returned, initialized properly
-        instance = cls._instance if cls._instance else cls()
-        if not getattr(instance, 'initialized', False):
-            # If somehow the instance is there but not marked initialized, initialize resources
-            instance.initialize_resources()
-        return instance
 
     def get_config(self):
         parser = argparse.ArgumentParser()
