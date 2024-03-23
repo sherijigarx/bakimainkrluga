@@ -60,7 +60,7 @@ class MusicQualityEvaluator:
 
         try:
             consistency_score = MetricEvaluator.calculate_consistency(file_path, text)
-            bt.logging.info(f'.......Consistency Score......: {consistency_score}')
+            bt.logging.info(f'....... Music Prompt ......: {text} : ....... Consistency Score......: {consistency_score}')
         except:
             bt.logging.error(f"Failed to calculate Consistency score")
 
