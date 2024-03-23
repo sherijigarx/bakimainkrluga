@@ -87,5 +87,3 @@ def get_TTM():
     else:
         # Handle other failure codes
         return None
-    
-    
