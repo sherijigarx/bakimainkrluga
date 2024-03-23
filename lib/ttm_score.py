@@ -28,8 +28,8 @@ class MetricEvaluator:
     def calculate_consistency(file_path, text):
         try:
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            pt_file = hf_hub_download(repo_id="lukewys/laion_clap", filename="630k-best.pt")
-            clap_metric = CLAPTextConsistencyMetric(pt_file).to(device)
+            pt_file = hf_hub_download(repo_id="lukewys/laion_clap", filename="music_audioset_epoch_15_esc_90.14.pt")
+            clap_metric = CLAPTextConsistencyMetric(pt_file, model_arch='HTSAT-base').to(device)
             def convert_audio(audio, from_rate, to_rate, to_channels):
                 resampler = torchaudio.transforms.Resample(orig_freq=from_rate, new_freq=to_rate)
                 audio = resampler(audio)
@@ -38,9 +38,9 @@ class MetricEvaluator:
                 return audio
 
             audio, sr = torchaudio.load(file_path)
-            audio = convert_audio(audio, from_rate=sr, to_rate=48000, to_channels=1)
+            audio = convert_audio(audio, from_rate=sr, to_rate=sr, to_channels=1)
 
-            clap_metric.update(audio.unsqueeze(0), [text], torch.tensor([audio.shape[1]]), torch.tensor([48000]))
+            clap_metric.update(audio.unsqueeze(0), [text], torch.tensor([audio.shape[1]]), torch.tensor([sr]))
             consistency_score = clap_metric.compute()
             return consistency_score
         except Exception as e:
