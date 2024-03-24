@@ -13,7 +13,7 @@ class CloneScore:
         self.n_mels = n_mels
         self.vad = Vad(sample_rate=16000)  # Voice Activity Detection for trimming silence
 
-    def trim_silence(self, waveform):
+    def trim_silence(self, waveform,):
         # Assuming the audio is mono for simplicity; adjust or expand as needed for your use case
         if waveform.shape[0] > 1:
             waveform = torch.mean(waveform, dim=0, keepdim=True)
@@ -23,7 +23,7 @@ class CloneScore:
     def extract_mel_spectrogram(self, file_path):
         waveform, sample_rate = torchaudio.load(file_path)
         # Trim silence from the waveform
-        waveform = self.trim_silence(waveform, sample_rate)
+        waveform = self.trim_silence(waveform)
         mel_spectrogram_transform = T.MelSpectrogram(sample_rate=sample_rate, n_mels=self.n_mels)
         mel_spectrogram = mel_spectrogram_transform(waveform)
         # Convert power spectrogram to dB units and normalize
@@ -58,7 +58,7 @@ class CloneScore:
         try:
             bt.logging.info(f"Extracting Mel spectrograms...")
             bt.logging.info(f"File 1: {file_path1}")
-            bt.logging.info("File 2: {file_path2}")
+            bt.logging.info(f"File 2: {file_path2}")
             bt.logging.info(f"Input Text:{input_text}")
             spec1 = self.extract_mel_spectrogram(file_path1)
             spec2 = self.extract_mel_spectrogram(file_path2)
