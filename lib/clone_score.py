@@ -45,8 +45,10 @@ class CloneScore:
         # Flatten the spectrograms and convert them to NumPy arrays for the cosine similarity calculation
         spec1_flat = spec1.numpy().flatten()
         spec2_flat = spec2.numpy().flatten()
-        # Calculate the cosine similarity. The result is normalized between 0 and 1.
+        # Calculate the cosine similarity and ensure it is within the range [0, 1]
         sim = 1 - cosine(spec1_flat, spec2_flat)
+        # Clamp the similarity to be between 0 and 1
+        sim = max(0, min(sim, 1))
         return sim
 
     def compare_audio(self, file_path1, file_path2, input_text, decay_rate):
