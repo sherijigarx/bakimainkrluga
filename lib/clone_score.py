@@ -70,7 +70,6 @@ class CloneScore:
             # Calculate Cosine Similarity
             cosine_sim = self.calculate_cosine_similarity(spec1, spec2)
             bt.logging.info(f"Cosine Similarity for Voice Cloning: {cosine_sim}")
-            # No decay score is calculated here as we use cosine similarity directly
         else:
             cosine_sim = 0  # Assigning a default low value if spectrograms extraction failed
 
@@ -80,11 +79,8 @@ class CloneScore:
             print(f"Error calculating NISQA score inside compare_audio function: {e}")
             nisqa_wer_score = 0
 
-        # Calculate Final Score considering Cosine Similarity and NISQA score
-        if nisqa_wer_score == 0 or cosine_sim == 0:
-            final_score = 0
-        else:
-            final_score = (cosine_sim + nisqa_wer_score) / 2
+        # Calculate Final Score with 80% weight for Cosine Similarity and 20% weight for NISQA score
+        final_score = 0.8 * cosine_sim + 0.2 * nisqa_wer_score
         bt.logging.info(f"Final Score for Voice Cloning: {final_score}")
 
         return final_score
