@@ -80,7 +80,9 @@ class CloneScore:
             nisqa_wer_score = 0
 
         # Calculate Final Score with 80% weight for Cosine Similarity and 20% weight for NISQA score
-        final_score = 0.8 * cosine_sim + 0.2 * nisqa_wer_score
+        final_score = 0.4 * cosine_sim + 0.6 * nisqa_wer_score
+        if cosine_sim == 0:
+            final_score = 0
         bt.logging.info(f"Final Score for Voice Cloning: {final_score}")
 
         return final_score
