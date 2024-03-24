@@ -47,8 +47,10 @@ class CloneScore:
         spec2_flat = spec2.numpy().flatten()
         # Calculate the cosine similarity and ensure it is within the range [0, 1]
         sim = 1 - cosine(spec1_flat, spec2_flat)
-        # Clamp the similarity to be between 0 and 1
-        sim = max(0, min(sim, 1))
+        # Inform the user if the initial similarity value is negative
+        if sim < 0:
+            print(f"Initial cosine similarity was negative: {sim}. Setting to 0.")
+            sim = 0  # Zero out negative value
         return sim
 
     def compare_audio(self, file_path1, file_path2, input_text, decay_rate):
@@ -82,7 +84,7 @@ class CloneScore:
         # Calculate Final Score with 80% weight for Cosine Similarity and 20% weight for NISQA score
         final_score = 0.4 * cosine_sim + 0.6 * nisqa_wer_score
         if cosine_sim == 0:
-            final_score = 0
+            final_score = -0.1  # Assigning a negative score for zero or negative cosine similarity
         bt.logging.info(f"Final Score for Voice Cloning: {final_score}")
 
         return final_score
