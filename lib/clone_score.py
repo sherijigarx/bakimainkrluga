@@ -5,8 +5,6 @@ import bittensor as bt
 from lib.reward import score
 import math
 import numpy as np
-from scipy.spatial.distance import cosine
-from fastdtw import fastdtw
 from torchaudio.transforms import Vad
 
 class CloneScore:
