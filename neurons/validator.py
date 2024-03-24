@@ -54,7 +54,7 @@ async def main():
     services = [
         # TextToSpeechService(),
         # MusicGenerationService(),
-        # VoiceCloningService(),
+        VoiceCloningService(),
     ]
 
     # Initialize an empty list to hold our tasks
