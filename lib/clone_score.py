@@ -13,7 +13,7 @@ class CloneScore:
         self.n_mels = n_mels
         self.vad = Vad(sample_rate=16000)  # Voice Activity Detection for trimming silence
 
-    def trim_silence(self, waveform, sample_rate):
+    def trim_silence(self, waveform):
         # Assuming the audio is mono for simplicity; adjust or expand as needed for your use case
         if waveform.shape[0] > 1:
             waveform = torch.mean(waveform, dim=0, keepdim=True)
@@ -49,21 +49,21 @@ class CloneScore:
         sim = 1 - cosine(spec1_flat, spec2_flat)
         # Inform the user if the initial similarity value is negative
         if sim < 0:
-            print(f"Initial cosine similarity was negative: {sim}. Setting to 0.")
+            bt.logging.error(f"Initial cosine similarity was negative: {sim}. Setting to 0.")
             sim = 0  # Zero out negative value
         return sim
 
     def compare_audio(self, file_path1, file_path2, input_text, decay_rate):
         # Extract Mel Spectrograms
         try:
-            print("Extracting Mel spectrograms...")
-            print("File 1:", file_path1)
-            print("File 2:", file_path2)
-            print("Input Text:", input_text)
+            bt.logging.info(f"Extracting Mel spectrograms...")
+            bt.logging.info(f"File 1: {file_path1}")
+            bt.logging.info("File 2: {file_path2}")
+            bt.logging.info(f"Input Text:{input_text}")
             spec1 = self.extract_mel_spectrogram(file_path1)
             spec2 = self.extract_mel_spectrogram(file_path2)
         except Exception as e:
-            print(f"Error extracting Mel spectrograms: {e}")
+            bt.logging.error(f"Error extracting Mel spectrograms: {e}")
             spec1 = spec2 = None
 
         if spec1 is not None and spec2 is not None:
@@ -78,10 +78,10 @@ class CloneScore:
         try:
             nisqa_wer_score = score(file_path2, input_text)
         except Exception as e:
-            print(f"Error calculating NISQA score inside compare_audio function: {e}")
+            bt.logging.error(f"Error calculating NISQA score inside compare_audio function: {e}")
             nisqa_wer_score = 0
 
-        # Calculate Final Score with 80% weight for Cosine Similarity and 20% weight for NISQA score
+        # Calculate Final Score with 40% weight for Cosine Similarity and 60% weight for NISQA score
         final_score = 0.4 * cosine_sim + 0.6 * nisqa_wer_score
         if cosine_sim == 0:
             final_score = -0.1  # Assigning a negative score for zero or negative cosine similarity
