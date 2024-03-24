@@ -28,8 +28,8 @@ class MetricEvaluator:
     def calculate_consistency(file_path, text):
         try:
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            pt_file = hf_hub_download(repo_id="lukewys/laion_clap", filename="630k-audioset-fusion-best.pt")
-            clap_metric = CLAPTextConsistencyMetric(pt_file, enable_fusion=True).to(device)
+            pt_file = hf_hub_download(repo_id="lukewys/laion_clap", filename="630k-audioset-best.pt")
+            clap_metric = CLAPTextConsistencyMetric(pt_file).to(device)
             def convert_audio(audio, from_rate, to_rate, to_channels):
                 resampler = torchaudio.transforms.Resample(orig_freq=from_rate, new_freq=to_rate)
                 audio = resampler(audio)
@@ -60,7 +60,7 @@ class MusicQualityEvaluator:
 
         try:
             consistency_score = MetricEvaluator.calculate_consistency(file_path, text)
-            bt.logging.info(f'....... Music Prompt ......: {text} : ....... Consistency Score for model [ 630k-audioset-fusion-best.pt ]......: {consistency_score}')
+            bt.logging.info(f'....... Music Prompt ......: {text} : ....... Consistency Score for model [ 630k-audioset-best.pt ]......: {consistency_score}')
         except:
             bt.logging.error(f"Failed to calculate Consistency score")
 
