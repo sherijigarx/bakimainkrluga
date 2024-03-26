@@ -72,7 +72,7 @@ async def main():
     # If the 'app' folder exists, create and run the FastAPI app
     if os.path.exists(os.path.join(project_root, 'app')):
         # Read secret key from environment variable
-        secret_key = os.getenv("LOGIN_SECRET_KEY")
+        secret_key = os.getenv("AUTH_SECRET_KEY")
         if not secret_key:
             raise ValueError("Login Secret key not found in environment variable LOGIN_SECRET_KEY")
         app = create_app(secret_key)
