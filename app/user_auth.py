@@ -10,7 +10,7 @@ from typing import Generator, Annotated
 from sqlalchemy.orm import Session
 from .user_database import SessionLocal
 
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = os.environ.get('USER_SECRET_KEY')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
